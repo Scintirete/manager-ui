@@ -1,62 +1,148 @@
+import { URL } from 'url'
+import https from 'https'
+import http from 'http'
+
+// 统一的API请求参数接口
+interface ApiRequest {
+  baseUrl: string
+  endpoint: string
+  method: 'GET' | 'POST' | 'DELETE'
+  data?: any
+  headers?: Record<string, string>
+}
+
+// 使用Node.js原生模块发送HTTP请求
+function makeRequest(url: string, options: any): Promise<any> {
+  return new Promise((resolve, reject) => {
+    const parsedUrl = new URL(url)
+    const isHttps = parsedUrl.protocol === 'https:'
+    const client = isHttps ? https : http
+    
+    const requestOptions = {
+      hostname: parsedUrl.hostname,
+      port: parsedUrl.port || (isHttps ? 443 : 80),
+      path: parsedUrl.pathname + parsedUrl.search,
+      method: options.method,
+      headers: options.headers,
+      timeout: 30000
+    }
+    
+    const req = client.request(requestOptions, (res) => {
+      let data = ''
+      
+      res.on('data', (chunk) => {
+        data += chunk
+      })
+      
+      res.on('end', () => {
+        try {
+          const result = data ? JSON.parse(data) : {}
+          if (res.statusCode && res.statusCode >= 200 && res.statusCode < 300) {
+            resolve(result)
+          } else {
+            reject({
+              statusCode: res.statusCode,
+              statusMessage: res.statusMessage,
+              data: result
+            })
+          }
+        } catch (parseError) {
+          reject({
+            statusCode: res.statusCode,
+            statusMessage: '响应解析失败',
+            data: data
+          })
+        }
+      })
+    })
+    
+    req.on('error', (error: any) => {
+      reject({
+        code: error.code,
+        message: error.message
+      })
+    })
+    
+    req.on('timeout', () => {
+      req.destroy()
+      reject({
+        code: 'ECONNABORTED',
+        message: '请求超时'
+      })
+    })
+    
+    // 发送请求体（如果有）
+    if (options.data) {
+      req.write(JSON.stringify(options.data))
+    }
+    
+    req.end()
+  })
+}
+
 export default defineEventHandler(async (event) => {
   try {
-    const body = await readBody(event)
+    const request: ApiRequest = await readBody(event)
     
-    // 从请求体中解构必要的参数
-    const { endpoint, method = 'GET', data, headers = {} } = body
-    
-    if (!endpoint) {
+    // 验证必要参数
+    if (!request.endpoint) {
       throw createError({
         statusCode: 400,
         statusMessage: 'Missing endpoint parameter'
       })
     }
 
-    // 构建完整的URL（假设目标服务器信息在请求中提供）
-    const { baseUrl } = body
-    if (!baseUrl) {
+    if (!request.baseUrl) {
       throw createError({
         statusCode: 400,
         statusMessage: 'Missing baseUrl parameter'
       })
     }
 
-    const targetUrl = `${baseUrl}${endpoint}`
+    const targetUrl = `${request.baseUrl}${request.endpoint}`
     
-    // 转发请求到目标服务器
-    const response = await $fetch(targetUrl, {
-      method,
-      body: data,
+    const requestOptions = {
+      method: request.method,
       headers: {
         'Content-Type': 'application/json',
-        ...headers
-      }
-    })
-
+        ...request.headers
+      },
+      data: request.method.toUpperCase() !== 'GET' ? request.data : undefined
+    }
+    
+    const response = await makeRequest(targetUrl, requestOptions)
     return response
   } catch (error: any) {
     console.error('Proxy request failed:', error)
     
-    // 处理网络错误
-    if (error.cause?.code === 'ECONNREFUSED') {
+    // 统一错误处理
+    if (error.code === 'ECONNREFUSED') {
       throw createError({
         statusCode: 503,
-        statusMessage: 'Service unavailable - connection refused'
+        statusMessage: '连接被拒绝，请检查服务器地址和端口'
+      })
+    }
+    
+    if (error.code === 'ECONNABORTED') {
+      throw createError({
+        statusCode: 408,
+        statusMessage: '请求超时，请检查网络连接'
       })
     }
     
     // 处理HTTP错误
-    if (error.response) {
+    if (error.statusCode) {
       throw createError({
-        statusCode: error.response.status || 500,
-        statusMessage: error.response.statusText || 'Proxy request failed'
+        statusCode: error.statusCode,
+        statusMessage: error.data?.message || error.statusMessage || '请求失败',
+        data: error.data
       })
     }
     
     // 其他错误
     throw createError({
       statusCode: 500,
-      statusMessage: 'Internal proxy error'
+      statusMessage: error.message || '内部服务器错误'
     })
   }
 }) 

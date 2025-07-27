@@ -73,21 +73,21 @@
                 <el-button 
                   type="primary" 
                   size="small"
-                  @click="showInsertDialog(row)"
+                  @click="showVectorDialog('insert', row)"
                 >
                   插入向量
                 </el-button>
                 <el-button 
                   type="success" 
                   size="small"
-                  @click="showSearchDialog(row)"
+                  @click="showVectorDialog('search', row)"
                 >
                   搜索向量
                 </el-button>
                 <el-button 
                   type="warning" 
                   size="small"
-                  @click="showDeleteDialog(row)"
+                  @click="showVectorDialog('delete', row)"
                 >
                   删除向量
                 </el-button>
@@ -96,165 +96,15 @@
           </el-table>
         </el-card>
 
-        <!-- 插入向量对话框 -->
-        <el-dialog 
-          v-model="insertDialogVisible" 
-          title="插入向量" 
-          width="600px"
-          @close="resetInsertForm"
-        >
-          <el-form ref="insertFormRef" :model="insertForm" label-width="120px">
-            <el-form-item label="嵌入模型">
-              <el-select 
-                v-model="insertForm.model" 
-                placeholder="选择嵌入模型"
-                style="width: 100%"
-                :loading="modelsLoading"
-              >
-                <el-option 
-                  v-for="model in embeddingModels"
-                  :key="model.id"
-                  :label="`${model.name} (${model.dimension}D)`"
-                  :value="model.id"
-                  :disabled="!model.available"
-                />
-              </el-select>
-            </el-form-item>
-            <el-form-item label="文本内容">
-              <el-input 
-                v-model="insertForm.text"
-                type="textarea" 
-                :rows="4"
-                placeholder="输入要转换为向量的文本内容"
-              />
-            </el-form-item>
-            <el-form-item label="元数据 (JSON)">
-              <el-input 
-                v-model="insertForm.metadata"
-                type="textarea" 
-                :rows="3"
-                placeholder='{"key": "value", "tag": "example"}'
-              />
-            </el-form-item>
-          </el-form>
-          <template #footer>
-            <el-button @click="insertDialogVisible = false">取消</el-button>
-            <el-button 
-              type="primary" 
-              @click="handleInsert"
-              :loading="inserting"
-            >
-              插入
-            </el-button>
-          </template>
-        </el-dialog>
-
-        <!-- 搜索向量对话框 -->
-        <el-dialog 
-          v-model="searchDialogVisible" 
-          title="搜索向量" 
-          width="800px"
-          @close="resetSearchForm"
-        >
-          <el-form ref="searchFormRef" :model="searchForm" label-width="120px">
-            <el-form-item label="嵌入模型">
-              <el-select 
-                v-model="searchForm.model" 
-                placeholder="选择嵌入模型"
-                style="width: 100%"
-                :loading="modelsLoading"
-              >
-                <el-option 
-                  v-for="model in embeddingModels"
-                  :key="model.id"
-                  :label="`${model.name} (${model.dimension}D)`"
-                  :value="model.id"
-                  :disabled="!model.available"
-                />
-              </el-select>
-            </el-form-item>
-            <el-form-item label="查询文本">
-              <el-input 
-                v-model="searchForm.queryText"
-                type="textarea" 
-                :rows="3"
-                placeholder="输入查询文本"
-              />
-            </el-form-item>
-            <el-form-item label="返回数量">
-              <el-input-number 
-                v-model="searchForm.topK" 
-                :min="1" 
-                :max="100"
-                style="width: 100%"
-              />
-            </el-form-item>
-            <el-form-item label="过滤条件">
-              <el-input 
-                v-model="searchForm.filter"
-                placeholder="可选，元数据过滤条件"
-              />
-            </el-form-item>
-          </el-form>
-          
-          <!-- 搜索结果 -->
-          <div v-if="searchResults.length > 0" class="search-results">
-            <h4>搜索结果：</h4>
-            <el-table :data="searchResults" size="small" max-height="300">
-              <el-table-column prop="id" label="ID" width="80" />
-              <el-table-column prop="distance" label="距离" width="100">
-                <template #default="{ row }">
-                  {{ row.distance.toFixed(4) }}
-                </template>
-              </el-table-column>
-              <el-table-column prop="metadata" label="元数据">
-                <template #default="{ row }">
-                  <code>{{ JSON.stringify(row.metadata) }}</code>
-                </template>
-              </el-table-column>
-            </el-table>
-          </div>
-          
-          <template #footer>
-            <el-button @click="searchDialogVisible = false">关闭</el-button>
-            <el-button 
-              type="primary" 
-              @click="handleSearch"
-              :loading="searching"
-            >
-              搜索
-            </el-button>
-          </template>
-        </el-dialog>
-
-        <!-- 删除向量对话框 -->
-        <el-dialog 
-          v-model="deleteDialogVisible" 
-          title="删除向量" 
-          width="500px"
-          @close="resetDeleteForm"
-        >
-          <el-form :model="deleteForm" label-width="120px">
-            <el-form-item label="向量ID列表">
-              <el-input 
-                v-model="deleteForm.ids"
-                type="textarea" 
-                :rows="4"
-                placeholder="输入要删除的向量ID，用逗号分隔，例如: 1,2,3"
-              />
-            </el-form-item>
-          </el-form>
-          <template #footer>
-            <el-button @click="deleteDialogVisible = false">取消</el-button>
-            <el-button 
-              type="danger" 
-              @click="handleDelete"
-              :loading="deleting"
-            >
-              删除
-            </el-button>
-          </template>
-        </el-dialog>
+        <!-- 向量操作模态框 -->
+        <VectorOperationModal
+          v-model:visible="vectorDialogVisible"
+          :operation="currentOperation"
+          :embedding-models="embeddingModels"
+          :models-loading="modelsLoading"
+          :search-results="searchResults"
+          @submit="handleVectorOperation"
+        />
       </el-main>
     </el-container>
   </div>
@@ -262,7 +112,7 @@
 
 <script setup lang="ts">
 import { ArrowLeft, Refresh } from '@element-plus/icons-vue'
-import type { CollectionInfo, EmbeddingModel, SearchResultItem, DistanceMetric } from '~/types/scintirete'
+import type { CollectionInfo, EmbeddingModel, SearchResultItem, DistanceMetric } from '../../types/scintirete'
 
 // 设置页面元信息
 useHead({
@@ -288,9 +138,6 @@ const { getConnection } = useConnections()
 // 页面状态
 const loading = ref(false)
 const modelsLoading = ref(false)
-const inserting = ref(false)
-const searching = ref(false)
-const deleting = ref(false)
 
 const collections = ref<CollectionInfo[]>([])
 const embeddingModels = ref<EmbeddingModel[]>([])
@@ -298,28 +145,8 @@ const currentDatabase = ref('')
 const currentCollection = ref<CollectionInfo | null>(null)
 
 // 对话框状态
-const insertDialogVisible = ref(false)
-const searchDialogVisible = ref(false)
-const deleteDialogVisible = ref(false)
-
-// 表单数据
-const insertForm = ref({
-  model: '',
-  text: '',
-  metadata: ''
-})
-
-const searchForm = ref({
-  model: '',
-  queryText: '',
-  topK: 10,
-  filter: ''
-})
-
-const deleteForm = ref({
-  ids: ''
-})
-
+const vectorDialogVisible = ref(false)
+const currentOperation = ref<'insert' | 'search' | 'delete'>('insert')
 const searchResults = ref<SearchResultItem[]>([])
 
 // 初始化连接和数据
@@ -382,158 +209,117 @@ const refreshCollections = async () => {
   await loadCollections()
 }
 
-// 显示插入对话框
-const showInsertDialog = (collection: CollectionInfo) => {
+// 显示向量操作对话框
+const showVectorDialog = (operation: 'insert' | 'search' | 'delete', collection: CollectionInfo) => {
+  currentOperation.value = operation
   currentCollection.value = collection
-  insertDialogVisible.value = true
+  searchResults.value = [] // 重置搜索结果
+  vectorDialogVisible.value = true
 }
 
-// 显示搜索对话框
-const showSearchDialog = (collection: CollectionInfo) => {
-  currentCollection.value = collection
-  searchDialogVisible.value = true
-}
+// 处理向量操作
+const handleVectorOperation = async (formData: any) => {
+  if (!currentCollection.value) return
 
-// 显示删除对话框
-const showDeleteDialog = (collection: CollectionInfo) => {
-  currentCollection.value = collection
-  deleteDialogVisible.value = true
+  try {
+    switch (currentOperation.value) {
+      case 'insert':
+        await handleInsert(formData)
+        break
+      case 'search':
+        await handleSearch(formData)
+        break
+      case 'delete':
+        await handleDelete(formData)
+        break
+    }
+  } catch (error: any) {
+    console.error(`${currentOperation.value} operation failed:`, error)
+    ElMessage.error(`操作失败：${error.message || '未知错误'}`)
+  }
 }
 
 // 处理插入向量
-const handleInsert = async () => {
-  if (!currentCollection.value || !insertForm.value.text.trim()) {
+const handleInsert = async (formData: any) => {
+  if (!formData.text.trim()) {
     ElMessage.warning('请填写文本内容')
     return
   }
 
-  inserting.value = true
-  try {
-    let metadata = {}
-    if (insertForm.value.metadata.trim()) {
-      try {
-        metadata = JSON.parse(insertForm.value.metadata)
-      } catch {
-        ElMessage.error('元数据格式错误，请输入有效的JSON')
-        return
-      }
+  let metadata = {}
+  if (formData.metadata.trim()) {
+    try {
+      metadata = JSON.parse(formData.metadata)
+    } catch {
+      ElMessage.error('元数据格式错误，请输入有效的JSON')
+      return
     }
-
-    const response = await embedAndInsert(
-      currentDatabase.value,
-      currentCollection.value.name,
-      [{ text: insertForm.value.text, metadata }],
-      insertForm.value.model || undefined
-    )
-
-    ElMessage.success(`成功插入 ${response.inserted_count} 个向量`)
-    insertDialogVisible.value = false
-    resetInsertForm()
-    await refreshCollections()
-  } catch (error: any) {
-    console.error('Insert failed:', error)
-    ElMessage.error(`插入失败：${error.message || '未知错误'}`)
-  } finally {
-    inserting.value = false
   }
+
+  const response = await embedAndInsert(
+    currentDatabase.value,
+    currentCollection.value!.name,
+    [{ text: formData.text, metadata }],
+    formData.model || undefined
+  )
+
+  ElMessage.success(`成功插入 ${response.inserted_count} 个向量`)
+  vectorDialogVisible.value = false
+  await refreshCollections()
 }
 
 // 处理搜索向量
-const handleSearch = async () => {
-  if (!currentCollection.value || !searchForm.value.queryText.trim()) {
+const handleSearch = async (formData: any) => {
+  if (!formData.queryText.trim()) {
     ElMessage.warning('请填写查询文本')
     return
   }
 
-  searching.value = true
-  try {
-    const response = await embedAndSearch(
-      currentDatabase.value,
-      currentCollection.value.name,
-      searchForm.value.queryText,
-      searchForm.value.topK,
-      searchForm.value.model || undefined,
-      searchForm.value.filter || undefined
-    )
+  const response = await embedAndSearch(
+    currentDatabase.value,
+    currentCollection.value!.name,
+    formData.queryText,
+    formData.topK,
+    formData.model || undefined,
+    formData.filter || undefined
+  )
 
-    searchResults.value = response.results || []
-    ElMessage.success(`找到 ${searchResults.value.length} 个结果`)
-  } catch (error: any) {
-    console.error('Search failed:', error)
-    ElMessage.error(`搜索失败：${error.message || '未知错误'}`)
-  } finally {
-    searching.value = false
-  }
+  searchResults.value = response.results || []
+  ElMessage.success(`找到 ${searchResults.value.length} 个结果`)
 }
 
 // 处理删除向量
-const handleDelete = async () => {
-  if (!currentCollection.value || !deleteForm.value.ids.trim()) {
+const handleDelete = async (formData: any) => {
+  if (!formData.ids.trim()) {
     ElMessage.warning('请填写向量ID')
     return
   }
 
-  try {
-    const ids = deleteForm.value.ids.split(',').map(id => parseInt(id.trim())).filter(id => !isNaN(id))
-    if (ids.length === 0) {
-      ElMessage.error('请输入有效的向量ID')
-      return
+  const ids = formData.ids.split(',').map((id: string) => parseInt(id.trim())).filter((id: number) => !isNaN(id))
+  if (ids.length === 0) {
+    ElMessage.error('请输入有效的向量ID')
+    return
+  }
+
+  await ElMessageBox.confirm(
+    `确定要删除 ${ids.length} 个向量吗？此操作不可撤销！`,
+    '确认删除',
+    {
+      confirmButtonText: '确认删除',
+      cancelButtonText: '取消',
+      type: 'warning'
     }
+  )
 
-    await ElMessageBox.confirm(
-      `确定要删除 ${ids.length} 个向量吗？此操作不可撤销！`,
-      '确认删除',
-      {
-        confirmButtonText: '确认删除',
-        cancelButtonText: '取消',
-        type: 'warning'
-      }
-    )
+  const response = await deleteVectors(
+    currentDatabase.value,
+    currentCollection.value!.name,
+    ids
+  )
 
-    deleting.value = true
-    const response = await deleteVectors(
-      currentDatabase.value,
-      currentCollection.value.name,
-      ids
-    )
-
-    ElMessage.success(`成功删除 ${response.deleted_count} 个向量`)
-    deleteDialogVisible.value = false
-    resetDeleteForm()
-    await refreshCollections()
-  } catch (error: any) {
-    if (error !== 'cancel') {
-      console.error('Delete failed:', error)
-      ElMessage.error(`删除失败：${error.message || '未知错误'}`)
-    }
-  } finally {
-    deleting.value = false
-  }
-}
-
-// 重置表单
-const resetInsertForm = () => {
-  insertForm.value = {
-    model: '',
-    text: '',
-    metadata: ''
-  }
-}
-
-const resetSearchForm = () => {
-  searchForm.value = {
-    model: '',
-    queryText: '',
-    topK: 10,
-    filter: ''
-  }
-  searchResults.value = []
-}
-
-const resetDeleteForm = () => {
-  deleteForm.value = {
-    ids: ''
-  }
+  ElMessage.success(`成功删除 ${response.deleted_count} 个向量`)
+  vectorDialogVisible.value = false
+  await refreshCollections()
 }
 
 // 工具函数
@@ -627,24 +413,6 @@ onMounted(async () => {
 .no-collections {
   text-align: center;
   padding: 40px 0;
-}
-
-.search-results {
-  margin-top: 20px;
-  padding-top: 20px;
-  border-top: 1px solid #ebeef5;
-}
-
-.search-results h4 {
-  margin-bottom: 10px;
-  color: #303133;
-}
-
-code {
-  background-color: #f5f7fa;
-  padding: 2px 4px;
-  border-radius: 3px;
-  font-size: 12px;
 }
 
 @media (max-width: 768px) {

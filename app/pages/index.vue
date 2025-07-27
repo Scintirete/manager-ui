@@ -7,89 +7,26 @@
       </el-header>
       
       <el-main>
-        <!-- 连接表单 -->
-        <el-card class="connection-form" shadow="hover">
-          <template #header>
-            <span>{{ isEditing ? '编辑连接' : '新建连接' }}</span>
+        <!-- 操作按钮区域 -->
+        <el-card class="action-card" shadow="hover">
+          <div class="action-buttons">
             <el-button 
-              v-if="isEditing" 
-              type="text" 
-              @click="cancelEdit"
-              style="float: right; margin-left: 10px;"
+              type="primary" 
+              size="large"
+              @click="showAddConnectionDialog"
+              :icon="Plus"
             >
-              取消
+              新建连接
             </el-button>
-          </template>
-          
-          <el-form 
-            ref="formRef"
-            :model="form" 
-            :rules="rules" 
-            label-width="120px"
-            @submit.prevent="handleSubmit"
-          >
-            <el-form-item label="连接名称" prop="name">
-              <el-input 
-                v-model="form.name" 
-                placeholder="可选，用于识别连接"
-                clearable
-              />
-            </el-form-item>
-            
-            <el-form-item label="服务器地址" prop="server">
-              <el-input 
-                v-model="form.server" 
-                placeholder="127.0.0.1"
-                clearable
-              />
-            </el-form-item>
-            
-            <el-form-item label="HTTP端口" prop="port">
-              <el-input-number 
-                v-model="form.port" 
-                :min="1" 
-                :max="65535"
-                controls-position="right"
-                style="width: 100%"
-              />
-            </el-form-item>
-            
-            <el-form-item label="密码" prop="password">
-              <el-input 
-                v-model="form.password" 
-                type="password"
-                placeholder="留空表示无密码"
-                show-password
-                clearable
-              />
-            </el-form-item>
-            
-            <el-form-item label="连接模式" prop="mode">
-              <el-radio-group v-model="form.mode">
-                <el-radio value="client">客户端直连</el-radio>
-                <el-radio 
-                  value="proxy" 
-                  :disabled="!config.public.enableServerProxy"
-                >
-                  服务器转发
-                  <span v-if="!config.public.enableServerProxy" style="color: #f56c6c; font-size: 12px;">
-                    （已禁用）
-                  </span>
-                </el-radio>
-              </el-radio-group>
-            </el-form-item>
-            
-            <el-form-item>
-              <el-button 
-                type="primary" 
-                @click="handleSubmit"
-                :loading="submitting"
-              >
-                {{ isEditing ? '更新连接' : '添加连接' }}
-              </el-button>
-              <el-button @click="resetForm">重置</el-button>
-            </el-form-item>
-          </el-form>
+            <el-button 
+              type="default" 
+              size="large"
+              @click="refreshConnections"
+              :icon="Refresh"
+            >
+              刷新列表
+            </el-button>
+          </div>
         </el-card>
         
         <!-- 连接列表 -->
@@ -100,7 +37,7 @@
           
           <div v-if="connections.length === 0" class="no-connections">
             <el-empty description="暂无保存的连接配置">
-              <el-button type="primary" @click="resetForm">创建第一个连接</el-button>
+              <el-button type="primary" @click="showAddConnectionDialog">创建第一个连接</el-button>
             </el-empty>
           </div>
           
@@ -132,7 +69,7 @@
                 <el-button 
                   type="text" 
                   size="small"
-                  @click="editConnection(row)"
+                  @click="showEditConnectionDialog(row)"
                 >
                   编辑
                 </el-button>
@@ -148,13 +85,22 @@
             </el-table-column>
           </el-table>
         </el-card>
+
+        <!-- 连接配置模态框 -->
+        <ConnectionFormModal
+          v-model:visible="connectionDialogVisible"
+          :connection="editingConnection"
+          :enable-server-proxy="config.public.enableServerProxy"
+          @submit="handleAddConnection"
+          @update="handleUpdateConnection"
+        />
       </el-main>
     </el-container>
   </div>
 </template>
 
 <script setup lang="ts">
-import type { FormInstance, FormRules } from 'element-plus'
+import { Plus, Refresh } from '@element-plus/icons-vue'
 import type { ConnectionConfig } from '~/composables/useApi'
 
 // 设置页面元信息
@@ -172,66 +118,42 @@ const apiComposable = useApi()
 const { connections, addConnection, updateConnection, removeConnection } = connectionsComposable
 const { setConnection, healthCheck } = apiComposable
 
-// 表单引用和状态
-const formRef = ref<FormInstance>()
-const submitting = ref(false)
+// 页面状态
 const connectingId = ref<string | null>(null)
-const isEditing = ref(false)
-const editingId = ref<string | null>(null)
+const connectionDialogVisible = ref(false)
+const editingConnection = ref<ConnectionConfig | null>(null)
 
-// 表单数据
-const form = ref<Omit<ConnectionConfig, 'id'>>({
-  name: '',
-  server: '127.0.0.1',
-  port: 8080,
-  password: '',
-  mode: 'client'
-})
-
-// 表单验证规则
-const rules: FormRules = {
-  server: [
-    { required: true, message: '请输入服务器地址', trigger: 'blur' }
-  ],
-  port: [
-    { required: true, message: '请输入端口号', trigger: 'blur' },
-    { type: 'number', min: 1, max: 65535, message: '端口号范围：1-65535', trigger: 'blur' }
-  ],
-  mode: [
-    { required: true, message: '请选择连接模式', trigger: 'change' }
-  ]
+// 显示新建连接对话框
+const showAddConnectionDialog = () => {
+  editingConnection.value = null
+  connectionDialogVisible.value = true
 }
 
-// 重置表单
-const resetForm = () => {
-  form.value = {
-    name: '',
-    server: '127.0.0.1',
-    port: 8080,
-    password: '',
-    mode: 'client'
+// 显示编辑连接对话框
+const showEditConnectionDialog = (connection: ConnectionConfig) => {
+  editingConnection.value = connection
+  connectionDialogVisible.value = true
+}
+
+// 刷新连接列表
+const refreshConnections = () => {
+  // 连接数据存储在 localStorage，这里只是提供一个刷新按钮的交互
+  ElMessage.success('连接列表已刷新')
+}
+
+// 处理新建连接
+const handleAddConnection = (data: Omit<ConnectionConfig, 'id'>) => {
+  addConnection(data)
+  ElMessage.success('连接配置已保存')
+}
+
+// 处理更新连接
+const handleUpdateConnection = (id: string, data: Omit<ConnectionConfig, 'id'>) => {
+  if (updateConnection(id, data)) {
+    ElMessage.success('连接配置已更新')
+  } else {
+    ElMessage.error('更新失败')
   }
-  formRef.value?.clearValidate()
-  isEditing.value = false
-  editingId.value = null
-}
-
-// 取消编辑
-const cancelEdit = () => {
-  resetForm()
-}
-
-// 编辑连接
-const editConnection = (connection: ConnectionConfig) => {
-  form.value = {
-    name: connection.name || '',
-    server: connection.server,
-    port: connection.port,
-    password: connection.password,
-    mode: connection.mode
-  }
-  isEditing.value = true
-  editingId.value = connection.id!
 }
 
 // 删除连接
@@ -254,35 +176,6 @@ const deleteConnection = async (id: string) => {
     }
   } catch {
     // 用户取消删除
-  }
-}
-
-// 提交表单
-const handleSubmit = async () => {
-  if (!formRef.value) return
-  
-  try {
-    await formRef.value.validate()
-    submitting.value = true
-    
-    if (isEditing.value && editingId.value) {
-      // 更新连接
-      if (updateConnection(editingId.value, form.value)) {
-        ElMessage.success('连接配置已更新')
-        resetForm()
-      } else {
-        ElMessage.error('更新失败')
-      }
-    } else {
-      // 添加新连接
-      addConnection(form.value)
-      ElMessage.success('连接配置已保存')
-      resetForm()
-    }
-  } catch (error) {
-    console.error('Form validation failed:', error)
-  } finally {
-    submitting.value = false
   }
 }
 
@@ -342,8 +235,15 @@ const testAndConnect = async (connection: ConnectionConfig) => {
   margin: 0 auto;
 }
 
-.connection-form {
+.action-card {
   margin-bottom: 20px;
+}
+
+.action-buttons {
+  display: flex;
+  gap: 12px;
+  justify-content: center;
+  padding: 10px 0;
 }
 
 .connection-list {
@@ -359,10 +259,6 @@ const testAndConnect = async (connection: ConnectionConfig) => {
   margin-top: 0;
 }
 
-.el-form-item {
-  margin-bottom: 20px;
-}
-
 @media (max-width: 768px) {
   .el-main {
     padding: 10px;
@@ -370,6 +266,15 @@ const testAndConnect = async (connection: ConnectionConfig) => {
   
   .el-header h1 {
     font-size: 1.5em;
+  }
+
+  .action-buttons {
+    flex-direction: column;
+    align-items: center;
+  }
+
+  .action-buttons .el-button {
+    width: 200px;
   }
 }
 </style> 

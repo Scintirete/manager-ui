@@ -46,7 +46,7 @@ export function useConnections() {
   const updateConnection = (id: string, updates: Partial<ConnectionConfig>): boolean => {
     const index = connections.value.findIndex(conn => conn.id === id)
     if (index !== -1) {
-      connections.value[index] = { ...connections.value[index], ...updates }
+      connections.value[index] = { ...connections.value[index], ...updates } as ConnectionConfig
       saveConnections()
       return true
     }
