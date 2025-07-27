@@ -83,6 +83,14 @@ function makeRequest(url: string, options: any): Promise<any> {
 export default defineEventHandler(async (event) => {
   try {
     const request: ApiRequest = await readBody(event)
+    const config = useRuntimeConfig()
+
+    if (!config.public.enableServerProxy) {
+      throw createError({
+        statusCode: 403,
+        statusMessage: 'Server proxy is disabled'
+      })
+    }
     
     // 验证必要参数
     if (!request.endpoint) {
