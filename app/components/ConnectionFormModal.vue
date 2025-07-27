@@ -161,19 +161,14 @@ const handleSubmit = async () => {
   
   try {
     await formRef.value.validate()
-    submitting.value = true
     
     if (isEditing.value && props.connection?.id) {
       emit('update', props.connection.id, form.value)
     } else {
       emit('submit', form.value)
     }
-    
-    submitting.value = false
-    handleClose()
   } catch (error) {
     console.error('Form validation failed:', error)
-    submitting.value = false
   }
 }
 
@@ -191,4 +186,11 @@ watch(() => props.connection, (connection) => {
     resetForm()
   }
 }, { immediate: true })
+
+// 暴露方法供父组件调用
+defineExpose({
+  setLoading: (value: boolean) => {
+    submitting.value = value
+  }
+})
 </script> 

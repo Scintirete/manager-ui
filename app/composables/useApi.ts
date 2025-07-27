@@ -46,13 +46,21 @@ interface ApiRequest {
   headers?: Record<string, string>
 }
 
+// 连接验证结果
+interface ConnectionValidationResult {
+  isHealthy: boolean
+  isAuthenticated: boolean
+  error?: string
+}
+
 // 动态导入axios（仅在浏览器环境中）
 const getAxios = async () => {
   if (typeof window === 'undefined') {
     throw new Error('axios只能在浏览器环境中使用')
   }
-  const { default: axios } = await import('axios')
-  return axios.create({
+  // 使用 import() 语法避免 TypeScript 错误
+  const axios = await import('axios')
+  return axios.default.create({
     timeout: 30000,
     headers: {
       'Content-Type': 'application/json'
@@ -72,13 +80,13 @@ export function useApi() {
     currentConnection.value = connection
   }
 
-  // 构建认证信息
-  const buildAuth = (): AuthInfo => {
+  // 构建认证头信息 - 统一鉴权处理
+  const buildAuthHeaders = (): Record<string, string> => {
     if (!currentConnection.value) {
       throw new Error('No connection configured')
     }
     return {
-      password: currentConnection.value.password
+      'Authorization': `Bearer ${currentConnection.value.password}`
     }
   }
 
@@ -90,13 +98,18 @@ export function useApi() {
     return `http://${currentConnection.value.server}:${currentConnection.value.port}/api/v1`
   }
 
-  // 统一的请求方法
+  // 统一的请求方法 - 自动处理鉴权
   const apiRequest = async <T>(endpoint: string, options: ApiRequestOptions = {}): Promise<T> => {
     if (!currentConnection.value) {
       throw new Error('No connection configured')
     }
 
     const { method = 'GET', data, headers = {} } = options
+    
+    // 自动添加鉴权头，除了 health 接口
+    const finalHeaders = endpoint === '/health' 
+      ? headers 
+      : { ...buildAuthHeaders(), ...headers }
 
     try {
       // 构建统一的请求参数
@@ -105,7 +118,7 @@ export function useApi() {
         endpoint,
         method,
         data,
-        headers
+        headers: finalHeaders
       }
 
       if (currentConnection.value.mode === 'proxy' && config.public.enableServerProxy) {
@@ -165,7 +178,7 @@ export function useApi() {
     }
   }
 
-  // 健康检查
+  // 健康检查（不需要鉴权）
   const healthCheck = async (): Promise<boolean> => {
     try {
       await apiRequest('/health')
@@ -175,21 +188,63 @@ export function useApi() {
     }
   }
 
-  // 获取数据库列表
-  const listDatabases = async (): Promise<ListDatabasesResponse> => {
-    const auth = buildAuth()
-    return await apiRequest<ListDatabasesResponse>('/databases', {
-      method: 'GET',
-      headers: {
-        'Authorization': `Bearer ${auth.password}`
+  // 连接验证 - 同时检查健康状态和鉴权
+  const validateConnection = async (): Promise<ConnectionValidationResult> => {
+    try {
+      // 1. 先检查健康状态
+      const isHealthy = await healthCheck()
+      if (!isHealthy) {
+        return {
+          isHealthy: false,
+          isAuthenticated: false,
+          error: '服务器连接失败，请检查地址和端口'
+        }
       }
-    })
+
+      // 2. 检查鉴权是否正常 - 获取数据库列表
+      try {
+        await listDatabases()
+        return {
+          isHealthy: true,
+          isAuthenticated: true
+        }
+      } catch (error: any) {
+        // 判断是否是鉴权错误
+        if (error.message.includes('401') || error.message.includes('Unauthorized') || error.message.includes('认证')) {
+          return {
+            isHealthy: true,
+            isAuthenticated: false,
+            error: '认证失败，请检查密码是否正确'
+          }
+        }
+        
+        // 其他错误也认为鉴权有问题
+        return {
+          isHealthy: true,
+          isAuthenticated: false,
+          error: `鉴权验证失败：${error.message}`
+        }
+      }
+    } catch (error: any) {
+      return {
+        isHealthy: false,
+        isAuthenticated: false,
+        error: error.message || '连接验证失败'
+      }
+    }
   }
 
-  // 创建数据库
+  // 获取数据库列表（使用统一鉴权）
+  const listDatabases = async (): Promise<ListDatabasesResponse> => {
+    return await apiRequest<ListDatabasesResponse>('/databases')
+  }
+
+  // 创建数据库（使用统一鉴权）
   const createDatabase = async (name: string): Promise<CreateDatabaseResponse> => {
     const request: CreateDatabaseRequest = {
-      auth: buildAuth(),
+      auth: {
+        password: currentConnection.value?.password || ''
+      },
       name
     }
     return await apiRequest<CreateDatabaseResponse>('/databases', {
@@ -198,18 +253,12 @@ export function useApi() {
     })
   }
 
-  // 获取集合列表
+  // 获取集合列表（使用统一鉴权）
   const listCollections = async (dbName: string): Promise<ListCollectionsResponse> => {
-    const auth = buildAuth()
-    return await apiRequest<ListCollectionsResponse>(`/databases/${dbName}/collections`, {
-      method: 'GET',
-      headers: {
-        'Authorization': `Bearer ${auth.password}`
-      }
-    })
+    return await apiRequest<ListCollectionsResponse>(`/databases/${dbName}/collections`)
   }
 
-  // 创建集合
+  // 创建集合（使用统一鉴权）
   const createCollection = async (
     dbName: string,
     collectionName: string,
@@ -217,7 +266,9 @@ export function useApi() {
     hnswConfig?: HnswConfig
   ): Promise<CreateCollectionResponse> => {
     const request: CreateCollectionRequest = {
-      auth: buildAuth(),
+      auth: {
+        password: currentConnection.value?.password || ''
+      },
       db_name: dbName,
       collection_name: collectionName,
       metric_type: metricType,
@@ -229,18 +280,12 @@ export function useApi() {
     })
   }
 
-  // 获取嵌入模型列表
+  // 获取嵌入模型列表（使用统一鉴权）
   const listEmbeddingModels = async (): Promise<ListEmbeddingModelsResponse> => {
-    const auth = buildAuth()
-    return await apiRequest<ListEmbeddingModelsResponse>('/embed/models', {
-      method: 'GET',
-      headers: {
-        'Authorization': `Bearer ${auth.password}`
-      }
-    })
+    return await apiRequest<ListEmbeddingModelsResponse>('/embed/models')
   }
 
-  // 嵌入并插入向量
+  // 嵌入并插入向量（使用统一鉴权）
   const embedAndInsert = async (
     dbName: string, 
     collectionName: string, 
@@ -248,7 +293,9 @@ export function useApi() {
     embeddingModel?: string
   ): Promise<EmbedAndInsertResponse> => {
     const request: EmbedAndInsertRequest = {
-      auth: buildAuth(),
+      auth: {
+        password: currentConnection.value?.password || ''
+      },
       db_name: dbName,
       collection_name: collectionName,
       texts: texts.map(t => ({ text: t.text, metadata: t.metadata })),
@@ -260,7 +307,7 @@ export function useApi() {
     })
   }
 
-  // 嵌入并搜索向量
+  // 嵌入并搜索向量（使用统一鉴权）
   const embedAndSearch = async (
     dbName: string,
     collectionName: string,
@@ -270,7 +317,9 @@ export function useApi() {
     filter?: string
   ): Promise<SearchResponse> => {
     const request: EmbedAndSearchRequest = {
-      auth: buildAuth(),
+      auth: {
+        password: currentConnection.value?.password || ''
+      },
       db_name: dbName,
       collection_name: collectionName,
       query_text: queryText,
@@ -284,14 +333,16 @@ export function useApi() {
     })
   }
 
-  // 删除向量
+  // 删除向量（使用统一鉴权）
   const deleteVectors = async (
     dbName: string,
     collectionName: string,
     ids: number[]
   ): Promise<DeleteVectorsResponse> => {
     const request: DeleteVectorsRequest = {
-      auth: buildAuth(),
+      auth: {
+        password: currentConnection.value?.password || ''
+      },
       db_name: dbName,
       collection_name: collectionName,
       ids
@@ -306,6 +357,7 @@ export function useApi() {
     currentConnection: readonly(currentConnection),
     setConnection,
     healthCheck,
+    validateConnection,
     listDatabases,
     createDatabase,
     listCollections,

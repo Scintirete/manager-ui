@@ -47,6 +47,13 @@
    - 集合创建表单组件 (CollectionFormModal.vue)
    - 统一的加载状态和空状态处理
 
+5. **API 鉴权系统重构** 🆕
+   - 统一鉴权处理：创建 `buildAuthHeaders()` 统一生成 Authorization 头
+   - 自动鉴权注入：`apiRequest` 方法自动为所有接口（除 health）添加鉴权
+   - 增强连接验证：新增 `validateConnection()` 同时检查健康状态和鉴权
+   - 技术问题修复：支持动态导入和组件方法暴露
+   - 优化错误处理：提供更详细的鉴权失败信息
+
 ### 进行中
 暂无
 

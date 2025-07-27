@@ -162,7 +162,7 @@ const router = useRouter()
 
 // 连接管理
 const { connections, addConnection, updateConnection, removeConnection } = useConnections()
-const { setConnection, healthCheck } = useApi()
+const { setConnection, validateConnection } = useApi()
 
 // 组件状态
 const modalVisible = ref(false)
@@ -216,10 +216,10 @@ const connectToDatabase = async (connection: ConnectionConfig) => {
     // 设置当前连接
     setConnection(connection)
     
-    // 检查连接健康状态
-    const isHealthy = await healthCheck()
+    // 验证连接健康状态和鉴权
+    const validationResult = await validateConnection()
     
-    if (isHealthy) {
+    if (validationResult.isHealthy && validationResult.isAuthenticated) {
       ElMessage.success('连接成功')
       // 跳转到数据库管理页面
       await router.push({
@@ -227,7 +227,8 @@ const connectToDatabase = async (connection: ConnectionConfig) => {
         query: { connection: connectionId }
       })
     } else {
-      ElMessage.error('连接失败，请检查服务器地址和端口')
+      // 根据验证结果显示具体错误信息
+      ElMessage.error(validationResult.error || '连接验证失败')
     }
   } catch (error: any) {
     console.error('Connection failed:', error)
