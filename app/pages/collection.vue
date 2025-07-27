@@ -1,118 +1,125 @@
 <template>
-  <div class="collection-page">
-    <el-container>
-      <el-header>
-        <div class="header-content">
-          <div class="breadcrumb">
-            <el-button type="text" @click="goBack" style="color: white;">
-              <el-icon><ArrowLeft /></el-icon>
-              返回数据库列表
-            </el-button>
-            <span class="separator">/</span>
-            <span class="current-db">{{ currentDatabase }}</span>
-          </div>
-          <h1>集合管理</h1>
+  <NuxtLayout name="default" page-title="集合管理">
+    <template #page-actions>
+      <el-button type="text" @click="goBack" style="margin-right: 16px;">
+        <el-icon><ArrowLeft /></el-icon>
+        返回数据库列表
+      </el-button>
+      <div v-if="currentDatabase" style="margin-right: 16px; color: #606266;">
+        数据库: {{ currentDatabase }}
+      </div>
+      <el-button 
+        type="success" 
+        @click="showCreateCollectionDialog"
+        :disabled="loading"
+        style="margin-right: 10px"
+      >
+        创建集合
+      </el-button>
+      <el-button 
+        type="primary" 
+        @click="refreshCollections"
+        :loading="loading"
+        :icon="Refresh"
+      >
+        刷新
+      </el-button>
+    </template>
+
+    <div class="collection-content">
+      <!-- 集合列表 -->
+      <el-card class="collections-card" shadow="hover">
+        <template #header>
+          <span>集合列表</span>
+        </template>
+        
+        <!-- 加载状态 -->
+        <div v-if="loading && !collections.length" class="loading-container">
+          <el-skeleton :rows="3" animated />
         </div>
-      </el-header>
-      
-      <el-main>
-        <!-- 集合列表 -->
-        <el-card class="collections-card" shadow="hover">
-          <template #header>
-            <div style="display: flex; justify-content: space-between; align-items: center;">
-              <span>集合列表</span>
+        
+        <!-- 空状态 -->
+        <div v-else-if="!collections.length && !loading" class="no-collections">
+          <el-empty description="没有找到集合">
+            <el-button type="primary" @click="refreshCollections">重新加载</el-button>
+          </el-empty>
+        </div>
+        
+        <!-- 集合表格 -->
+        <el-table v-else :data="collections" stripe>
+          <el-table-column prop="name" label="集合名称" min-width="150" />
+          <el-table-column prop="dimension" label="维度" width="80" />
+          <el-table-column prop="vector_count" label="向量数量" width="100">
+            <template #default="{ row }">
+              {{ row.vector_count.toLocaleString() }}
+            </template>
+          </el-table-column>
+          <el-table-column prop="deleted_count" label="已删除" width="80">
+            <template #default="{ row }">
+              {{ row.deleted_count.toLocaleString() }}
+            </template>
+          </el-table-column>
+          <el-table-column prop="memory_bytes" label="内存占用" width="100">
+            <template #default="{ row }">
+              {{ formatBytes(row.memory_bytes) }}
+            </template>
+          </el-table-column>
+          <el-table-column prop="metric_type" label="距离度量" width="120">
+            <template #default="{ row }">
+              <el-tag size="small">{{ getMetricTypeName(row.metric_type) }}</el-tag>
+            </template>
+          </el-table-column>
+          <el-table-column label="操作" width="300">
+            <template #default="{ row }">
               <el-button 
                 type="primary" 
-                @click="refreshCollections"
-                :loading="loading"
-                :icon="Refresh"
+                size="small"
+                @click="showVectorDialog('insert', row)"
               >
-                刷新
+                插入向量
               </el-button>
-            </div>
-          </template>
-          
-          <!-- 加载状态 -->
-          <div v-if="loading && !collections.length" class="loading-container">
-            <el-skeleton :rows="3" animated />
-          </div>
-          
-          <!-- 空状态 -->
-          <div v-else-if="!collections.length && !loading" class="no-collections">
-            <el-empty description="没有找到集合">
-              <el-button type="primary" @click="refreshCollections">重新加载</el-button>
-            </el-empty>
-          </div>
-          
-          <!-- 集合表格 -->
-          <el-table v-else :data="collections" stripe>
-            <el-table-column prop="name" label="集合名称" min-width="150" />
-            <el-table-column prop="dimension" label="维度" width="80" />
-            <el-table-column prop="vector_count" label="向量数量" width="100">
-              <template #default="{ row }">
-                {{ row.vector_count.toLocaleString() }}
-              </template>
-            </el-table-column>
-            <el-table-column prop="deleted_count" label="已删除" width="80">
-              <template #default="{ row }">
-                {{ row.deleted_count.toLocaleString() }}
-              </template>
-            </el-table-column>
-            <el-table-column prop="memory_bytes" label="内存占用" width="100">
-              <template #default="{ row }">
-                {{ formatBytes(row.memory_bytes) }}
-              </template>
-            </el-table-column>
-            <el-table-column prop="metric_type" label="距离度量" width="120">
-              <template #default="{ row }">
-                <el-tag size="small">{{ getMetricTypeName(row.metric_type) }}</el-tag>
-              </template>
-            </el-table-column>
-            <el-table-column label="操作" width="300">
-              <template #default="{ row }">
-                <el-button 
-                  type="primary" 
-                  size="small"
-                  @click="showVectorDialog('insert', row)"
-                >
-                  插入向量
-                </el-button>
-                <el-button 
-                  type="success" 
-                  size="small"
-                  @click="showVectorDialog('search', row)"
-                >
-                  搜索向量
-                </el-button>
-                <el-button 
-                  type="warning" 
-                  size="small"
-                  @click="showVectorDialog('delete', row)"
-                >
-                  删除向量
-                </el-button>
-              </template>
-            </el-table-column>
-          </el-table>
-        </el-card>
+              <el-button 
+                type="success" 
+                size="small"
+                @click="showVectorDialog('search', row)"
+              >
+                搜索向量
+              </el-button>
+              <el-button 
+                type="warning" 
+                size="small"
+                @click="showVectorDialog('delete', row)"
+              >
+                删除向量
+              </el-button>
+            </template>
+          </el-table-column>
+        </el-table>
+      </el-card>
 
-        <!-- 向量操作模态框 -->
-        <VectorOperationModal
-          v-model:visible="vectorDialogVisible"
-          :operation="currentOperation"
-          :embedding-models="embeddingModels"
-          :models-loading="modelsLoading"
-          :search-results="searchResults"
-          @submit="handleVectorOperation"
-        />
-      </el-main>
-    </el-container>
-  </div>
+      <!-- 向量操作模态框 -->
+      <VectorOperationModal
+        v-model:visible="vectorDialogVisible"
+        :operation="currentOperation"
+        :embedding-models="embeddingModels"
+        :models-loading="modelsLoading"
+        :search-results="searchResults"
+        @submit="handleVectorOperation"
+      />
+
+      <!-- 创建集合模态框 -->
+      <CollectionFormModal
+        v-model:visible="createCollectionDialogVisible"
+        @submit="handleCreateCollection"
+        ref="createCollectionDialogRef"
+      />
+    </div>
+  </NuxtLayout>
 </template>
 
 <script setup lang="ts">
 import { ArrowLeft, Refresh } from '@element-plus/icons-vue'
-import type { CollectionInfo, EmbeddingModel, SearchResultItem, DistanceMetric } from '../../types/scintirete'
+import type { CollectionInfo, EmbeddingModel, SearchResultItem, DistanceMetric, HnswConfig } from '../../types/scintirete'
 
 // 设置页面元信息
 useHead({
@@ -128,6 +135,7 @@ const {
   currentConnection, 
   setConnection, 
   listCollections, 
+  createCollection,
   listEmbeddingModels,
   embedAndInsert,
   embedAndSearch,
@@ -148,6 +156,8 @@ const currentCollection = ref<CollectionInfo | null>(null)
 const vectorDialogVisible = ref(false)
 const currentOperation = ref<'insert' | 'search' | 'delete'>('insert')
 const searchResults = ref<SearchResultItem[]>([])
+const createCollectionDialogVisible = ref(false)
+const createCollectionDialogRef = ref()
 
 // 初始化连接和数据
 const initializePage = async () => {
@@ -207,6 +217,41 @@ const loadEmbeddingModels = async () => {
 // 刷新集合列表
 const refreshCollections = async () => {
   await loadCollections()
+}
+
+// 显示创建集合对话框
+const showCreateCollectionDialog = () => {
+  createCollectionDialogVisible.value = true
+}
+
+// 处理创建集合
+const handleCreateCollection = async (data: { 
+  name: string 
+  metricType: DistanceMetric
+  hnswConfig: HnswConfig
+}) => {
+  try {
+    createCollectionDialogRef.value?.setLoading(true)
+    const response = await createCollection(
+      currentDatabase.value,
+      data.name,
+      data.metricType,
+      data.hnswConfig
+    )
+    
+    if (response.success) {
+      ElMessage.success(`集合 "${data.name}" 创建成功`)
+      createCollectionDialogVisible.value = false
+      await refreshCollections()
+    } else {
+      ElMessage.error(response.message || '创建集合失败')
+    }
+  } catch (error: any) {
+    console.error('Create collection failed:', error)
+    ElMessage.error(`创建集合失败：${error.message || '未知错误'}`)
+  } finally {
+    createCollectionDialogRef.value?.setLoading(false)
+  }
 }
 
 // 显示向量操作对话框
@@ -357,47 +402,8 @@ onMounted(async () => {
 </script>
 
 <style scoped>
-.collection-page {
-  min-height: 100vh;
-  background-color: #f5f5f5;
-}
-
-.el-header {
-  background-color: #409eff;
-  color: white;
-  padding: 20px 0;
-}
-
-.header-content {
-  max-width: 1200px;
-  margin: 0 auto;
-  padding: 0 20px;
-}
-
-.breadcrumb {
-  display: flex;
-  align-items: center;
-  gap: 10px;
-  margin-bottom: 10px;
-  color: rgba(255, 255, 255, 0.9);
-  font-size: 14px;
-}
-
-.separator {
-  color: rgba(255, 255, 255, 0.7);
-}
-
-.current-db {
-  font-weight: bold;
-}
-
-.header-content h1 {
-  margin: 0;
-  font-size: 1.8em;
-}
-
-.el-main {
-  padding: 20px;
+.collection-content {
+  padding: 0 24px 24px;
   max-width: 1200px;
   margin: 0 auto;
 }
@@ -416,18 +422,8 @@ onMounted(async () => {
 }
 
 @media (max-width: 768px) {
-  .el-main {
-    padding: 10px;
-  }
-  
-  .header-content h1 {
-    font-size: 1.5em;
-  }
-  
-  .breadcrumb {
-    flex-direction: column;
-    align-items: flex-start;
-    gap: 5px;
+  .collection-content {
+    padding: 0 16px 16px;
   }
 }
 </style> 

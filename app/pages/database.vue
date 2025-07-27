@@ -1,93 +1,99 @@
 <template>
-  <div class="database-page">
-    <el-container>
-      <el-header>
-        <div class="header-content">
-          <div class="connection-info">
-            <el-button type="text" @click="goBack" style="color: white;">
-              <el-icon><ArrowLeft /></el-icon>
-              返回连接配置
-            </el-button>
-            <span class="connection-name">
-              {{ currentConnection?.name || `${currentConnection?.server}:${currentConnection?.port}` }}
-            </span>
-          </div>
-          <h1>数据库管理</h1>
+  <NuxtLayout name="default" page-title="数据库管理">
+    <template #page-actions>
+      <el-button type="text" @click="goBack" style="margin-right: 16px;">
+        <el-icon><ArrowLeft /></el-icon>
+        返回连接配置
+      </el-button>
+      <div v-if="currentConnection" style="margin-right: 16px; color: #606266;">
+        连接: {{ currentConnection?.name || `${currentConnection?.server}:${currentConnection?.port}` }}
+      </div>
+      <el-button 
+        type="success" 
+        @click="showCreateDialog"
+        :disabled="loading"
+        style="margin-right: 10px"
+      >
+        创建数据库
+      </el-button>
+      <el-button 
+        type="primary" 
+        @click="refreshDatabases"
+        :loading="loading"
+        :icon="Refresh"
+      >
+        刷新
+      </el-button>
+    </template>
+
+    <div class="database-content">
+      <el-card shadow="hover">
+        <template #header>
+          <span>数据库列表</span>
+        </template>
+        
+        <!-- 加载状态 -->
+        <div v-if="loading && !databases.length" class="loading-container">
+          <el-skeleton :rows="5" animated />
         </div>
-      </el-header>
-      
-      <el-main>
-        <el-card shadow="hover">
-          <template #header>
-            <div style="display: flex; justify-content: space-between; align-items: center;">
-              <span>数据库列表</span>
+        
+        <!-- 空状态 -->
+        <div v-else-if="!databases.length && !loading" class="no-databases">
+          <el-empty description="没有找到数据库">
+            <el-button type="primary" @click="refreshDatabases">重新加载</el-button>
+          </el-empty>
+        </div>
+        
+        <!-- 数据库列表 -->
+        <el-table v-else :data="databases" stripe>
+          <el-table-column prop="name" label="数据库名称" min-width="200">
+            <template #default="{ row }">
+              <strong>{{ row }}</strong>
+            </template>
+          </el-table-column>
+          <el-table-column label="操作" width="200">
+            <template #default="{ row }">
               <el-button 
                 type="primary" 
-                @click="refreshDatabases"
-                :loading="loading"
-                :icon="Refresh"
+                size="small"
+                @click="manageCollections(row)"
               >
-                刷新
+                管理集合
               </el-button>
-            </div>
-          </template>
-          
-          <!-- 加载状态 -->
-          <div v-if="loading && !databases.length" class="loading-container">
-            <el-skeleton :rows="5" animated />
-          </div>
-          
-          <!-- 空状态 -->
-          <div v-else-if="!databases.length && !loading" class="no-databases">
-            <el-empty description="没有找到数据库">
-              <el-button type="primary" @click="refreshDatabases">重新加载</el-button>
-            </el-empty>
-          </div>
-          
-          <!-- 数据库列表 -->
-          <el-table v-else :data="databases" stripe>
-            <el-table-column prop="name" label="数据库名称" min-width="200">
-              <template #default="{ row }">
-                <strong>{{ row }}</strong>
-              </template>
-            </el-table-column>
-            <el-table-column label="操作" width="200">
-              <template #default="{ row }">
+              <el-button 
+                v-if="config.public.enableDbDelete"
+                type="danger" 
+                size="small"
+                @click="deleteDatabase(row)"
+              >
+                删除
+              </el-button>
+              <el-tooltip 
+                v-else
+                content="数据库删除操作已被管理员禁用"
+                placement="top"
+              >
                 <el-button 
-                  type="primary" 
-                  size="small"
-                  @click="manageCollections(row)"
-                >
-                  管理集合
-                </el-button>
-                <el-button 
-                  v-if="config.public.enableDbDelete"
                   type="danger" 
                   size="small"
-                  @click="deleteDatabase(row)"
+                  disabled
                 >
                   删除
                 </el-button>
-                <el-tooltip 
-                  v-else
-                  content="数据库删除操作已被管理员禁用"
-                  placement="top"
-                >
-                  <el-button 
-                    type="danger" 
-                    size="small"
-                    disabled
-                  >
-                    删除
-                  </el-button>
-                </el-tooltip>
-              </template>
-            </el-table-column>
-          </el-table>
-        </el-card>
-      </el-main>
-    </el-container>
-  </div>
+              </el-tooltip>
+            </template>
+          </el-table-column>
+        </el-table>
+      </el-card>
+
+      <!-- 创建数据库模态框 -->
+      <DatabaseFormModal
+        v-model:visible="createDialogVisible"
+        @submit="handleCreateDatabase"
+        ref="createDialogRef"
+      />
+    </div>
+  </NuxtLayout>
 </template>
 
 <script setup lang="ts">
@@ -105,12 +111,14 @@ const router = useRouter()
 const config = useRuntimeConfig()
 
 // API 和连接管理
-const { currentConnection, setConnection, listDatabases } = useApi()
+const { currentConnection, setConnection, listDatabases, createDatabase } = useApi()
 const { getConnection } = useConnections()
 
 // 页面状态
 const loading = ref(false)
 const databases = ref<string[]>([])
+const createDialogVisible = ref(false)
+const createDialogRef = ref()
 
 // 初始化连接
 const initializeConnection = async () => {
@@ -170,6 +178,32 @@ const manageCollections = async (dbName: string) => {
   })
 }
 
+// 显示创建数据库对话框
+const showCreateDialog = () => {
+  createDialogVisible.value = true
+}
+
+// 处理创建数据库
+const handleCreateDatabase = async (data: { name: string }) => {
+  try {
+    createDialogRef.value?.setLoading(true)
+    const response = await createDatabase(data.name)
+    
+    if (response.success) {
+      ElMessage.success(`数据库 "${data.name}" 创建成功`)
+      createDialogVisible.value = false
+      await refreshDatabases()
+    } else {
+      ElMessage.error(response.message || '创建数据库失败')
+    }
+  } catch (error: any) {
+    console.error('Create database failed:', error)
+    ElMessage.error(`创建数据库失败：${error.message || '未知错误'}`)
+  } finally {
+    createDialogRef.value?.setLoading(false)
+  }
+}
+
 // 删除数据库
 const deleteDatabase = async (dbName: string) => {
   try {
@@ -203,42 +237,8 @@ onMounted(async () => {
 </script>
 
 <style scoped>
-.database-page {
-  min-height: 100vh;
-  background-color: #f5f5f5;
-}
-
-.el-header {
-  background-color: #409eff;
-  color: white;
-  padding: 20px 0;
-}
-
-.header-content {
-  max-width: 1200px;
-  margin: 0 auto;
-  padding: 0 20px;
-}
-
-.connection-info {
-  display: flex;
-  align-items: center;
-  gap: 10px;
-  margin-bottom: 10px;
-}
-
-.connection-name {
-  color: rgba(255, 255, 255, 0.9);
-  font-size: 14px;
-}
-
-.header-content h1 {
-  margin: 0;
-  font-size: 1.8em;
-}
-
-.el-main {
-  padding: 20px;
+.database-content {
+  padding: 0 24px 24px;
   max-width: 1200px;
   margin: 0 auto;
 }
@@ -257,18 +257,8 @@ onMounted(async () => {
 }
 
 @media (max-width: 768px) {
-  .el-main {
-    padding: 10px;
-  }
-  
-  .header-content h1 {
-    font-size: 1.5em;
-  }
-  
-  .connection-info {
-    flex-direction: column;
-    align-items: flex-start;
-    gap: 5px;
+  .database-content {
+    padding: 0 16px 16px;
   }
 }
 </style> 

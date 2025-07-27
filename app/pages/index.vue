@@ -1,280 +1,453 @@
 <template>
-  <div class="connection-page">
-    <el-container>
-      <el-header>
-        <h1>Scintirete Manager UI</h1>
-        <p>高性能向量数据库管理工具</p>
-      </el-header>
-      
-      <el-main>
-        <!-- 操作按钮区域 -->
-        <el-card class="action-card" shadow="hover">
-          <div class="action-buttons">
-            <el-button 
-              type="primary" 
-              size="large"
-              @click="showAddConnectionDialog"
-              :icon="Plus"
-            >
-              新建连接
-            </el-button>
-            <el-button 
-              type="default" 
-              size="large"
-              @click="refreshConnections"
-              :icon="Refresh"
-            >
-              刷新列表
-            </el-button>
-          </div>
-        </el-card>
-        
-        <!-- 连接列表 -->
-        <el-card class="connection-list" shadow="hover">
-          <template #header>
-            <span>已保存的连接 ({{ connections.length }})</span>
-          </template>
-          
-          <div v-if="connections.length === 0" class="no-connections">
-            <el-empty description="暂无保存的连接配置">
-              <el-button type="primary" @click="showAddConnectionDialog">创建第一个连接</el-button>
-            </el-empty>
-          </div>
-          
-          <el-table v-else :data="connections" stripe>
-            <el-table-column prop="name" label="连接名称" min-width="150">
-              <template #default="{ row }">
-                <strong>{{ row.name || `${row.server}:${row.port}` }}</strong>
-              </template>
-            </el-table-column>
-            <el-table-column prop="server" label="服务器" min-width="120" />
-            <el-table-column prop="port" label="端口" width="80" />
-            <el-table-column prop="mode" label="连接模式" width="120">
-              <template #default="{ row }">
-                <el-tag :type="row.mode === 'client' ? 'success' : 'info'">
-                  {{ row.mode === 'client' ? '客户端直连' : '服务器转发' }}
-                </el-tag>
-              </template>
-            </el-table-column>
-            <el-table-column label="操作" width="200">
-              <template #default="{ row }">
+  <NuxtLayout name="default" 
+    page-title="连接管理" 
+    :show-sidebar="false"
+    :show-breadcrumb="false"
+  >
+    <template #page-actions>
+      <el-button 
+        type="primary" 
+        @click="showCreateModal"
+        :icon="Plus"
+      >
+        新建连接
+      </el-button>
+    </template>
+
+    <div class="connections-grid">
+      <!-- 连接卡片网格 -->
+      <div class="connections-container">
+        <!-- 连接卡片 -->
+        <div 
+          v-for="connection in connections" 
+          :key="connection.id"
+          class="connection-card"
+          @click="connectToDatabase(connection)"
+        >
+          <el-card shadow="hover" class="connection-item">
+            <div class="connection-content">
+              <div class="connection-header">
+                <div class="connection-title">
+                  <h3>{{ connection.name || `${connection.server}:${connection.port}` }}</h3>
+                  <el-tag 
+                    :type="connection.mode === 'proxy' ? 'warning' : 'success'" 
+                    size="small"
+                  >
+                    {{ connection.mode === 'proxy' ? '代理模式' : '直连模式' }}
+                  </el-tag>
+                </div>
+                <div class="connection-actions" @click.stop>
+                  <el-button 
+                    type="text" 
+                    size="small"
+                    @click="editConnection(connection)"
+                    :icon="Edit"
+                  >
+                    编辑
+                  </el-button>
+                  <el-button 
+                    type="text" 
+                    size="small"
+                    @click="deleteConnection(connection.id)"
+                    :icon="Delete"
+                    class="danger-button"
+                  >
+                    删除
+                  </el-button>
+                </div>
+              </div>
+              
+              <div class="connection-details">
+                <div class="detail-item">
+                  <el-icon><Monitor /></el-icon>
+                  <span>{{ connection.server }}:{{ connection.port }}</span>
+                </div>
+                <div class="detail-item" v-if="connection.password">
+                  <el-icon><Lock /></el-icon>
+                  <span>需要密码验证</span>
+                </div>
+              </div>
+
+              <div class="connection-footer">
                 <el-button 
                   type="primary" 
-                  size="small"
-                  :loading="connectingId === row.id"
-                  @click="testAndConnect(row)"
+                  @click.stop="connectToDatabase(connection)"
+                  :loading="connectingIds.includes(connection.id || '')"
+                  style="width: 100%"
                 >
-                  {{ connectingId === row.id ? '连接中...' : '连接' }}
+                  {{ connectingIds.includes(connection.id || '') ? '连接中...' : '连接' }}
                 </el-button>
-                <el-button 
-                  type="text" 
-                  size="small"
-                  @click="showEditConnectionDialog(row)"
-                >
-                  编辑
-                </el-button>
-                <el-button 
-                  type="text" 
-                  size="small"
-                  @click="deleteConnection(row.id!)"
-                  style="color: #f56c6c;"
-                >
-                  删除
-                </el-button>
-              </template>
-            </el-table-column>
-          </el-table>
-        </el-card>
+              </div>
+            </div>
+          </el-card>
+        </div>
 
-        <!-- 连接配置模态框 -->
-        <ConnectionFormModal
-          v-model:visible="connectionDialogVisible"
-          :connection="editingConnection"
-          :enable-server-proxy="config.public.enableServerProxy"
-          @submit="handleAddConnection"
-          @update="handleUpdateConnection"
-        />
-      </el-main>
-    </el-container>
-  </div>
+        <!-- 空状态卡片 -->
+        <div v-if="connections.length === 0" class="empty-state">
+          <el-empty description="暂无连接配置">
+            <el-button type="primary" @click="showCreateModal">
+              创建第一个连接
+            </el-button>
+          </el-empty>
+        </div>
+      </div>
+
+      <!-- 快速开始面板 -->
+      <div class="quick-start-panel">
+        <el-card shadow="never" class="quick-start-card">
+          <template #header>
+            <div class="quick-start-header">
+              <el-icon><QuestionFilled /></el-icon>
+              <span>快速开始</span>
+            </div>
+          </template>
+          
+          <div class="quick-start-content">
+            <div class="step-item">
+              <div class="step-number">1</div>
+              <div class="step-content">
+                <h4>创建连接</h4>
+                <p>配置 Scintirete 服务器的连接信息</p>
+              </div>
+            </div>
+            
+            <div class="step-item">
+              <div class="step-number">2</div>
+              <div class="step-content">
+                <h4>管理数据库</h4>
+                <p>创建和管理向量数据库</p>
+              </div>
+            </div>
+            
+            <div class="step-item">
+              <div class="step-number">3</div>
+              <div class="step-content">
+                <h4>操作集合</h4>
+                <p>在集合中插入、搜索和删除向量</p>
+              </div>
+            </div>
+          </div>
+
+          <div class="quick-start-actions">
+            <el-button type="primary" @click="showCreateModal" style="width: 100%">
+              开始使用
+            </el-button>
+          </div>
+        </el-card>
+      </div>
+    </div>
+
+    <!-- 连接配置模态框 -->
+    <ConnectionFormModal
+      v-model:visible="modalVisible"
+      :connection="currentConnection"
+      :server-proxy-disabled="!config.public.enableServerProxy"
+      @submit="handleSubmit"
+      ref="modalRef"
+    />
+  </NuxtLayout>
 </template>
 
 <script setup lang="ts">
-import { Plus, Refresh } from '@element-plus/icons-vue'
+import { Plus, Edit, Delete, Monitor, Lock, QuestionFilled } from '@element-plus/icons-vue'
 import type { ConnectionConfig } from '~/composables/useApi'
 
 // 设置页面元信息
 useHead({
-  title: 'Scintirete Manager UI - 连接配置'
+  title: 'Scintirete Manager UI - 连接管理'
 })
 
-// 运行时配置
 const config = useRuntimeConfig()
+const router = useRouter()
 
-// 连接管理 - 确保在客户端初始化
-const connectionsComposable = useConnections()
-const apiComposable = useApi()
+// 连接管理
+const { connections, addConnection, updateConnection, removeConnection } = useConnections()
+const { setConnection, healthCheck } = useApi()
 
-const { connections, addConnection, updateConnection, removeConnection } = connectionsComposable
-const { setConnection, healthCheck } = apiComposable
+// 组件状态
+const modalVisible = ref(false)
+const currentConnection = ref<ConnectionConfig | null>(null)
+const connectingIds = ref<string[]>([])
+const modalRef = ref()
 
-// 页面状态
-const connectingId = ref<string | null>(null)
-const connectionDialogVisible = ref(false)
-const editingConnection = ref<ConnectionConfig | null>(null)
-
-// 显示新建连接对话框
-const showAddConnectionDialog = () => {
-  editingConnection.value = null
-  connectionDialogVisible.value = true
+// 显示创建/编辑模态框
+const showCreateModal = () => {
+  currentConnection.value = null
+  modalVisible.value = true
 }
 
-// 显示编辑连接对话框
-const showEditConnectionDialog = (connection: ConnectionConfig) => {
-  editingConnection.value = connection
-  connectionDialogVisible.value = true
+const editConnection = (connection: ConnectionConfig) => {
+  currentConnection.value = { ...connection }
+  modalVisible.value = true
 }
 
-// 刷新连接列表
-const refreshConnections = () => {
-  // 连接数据存储在 localStorage，这里只是提供一个刷新按钮的交互
-  ElMessage.success('连接列表已刷新')
-}
-
-// 处理新建连接
-const handleAddConnection = (data: Omit<ConnectionConfig, 'id'>) => {
-  addConnection(data)
-  ElMessage.success('连接配置已保存')
-}
-
-// 处理更新连接
-const handleUpdateConnection = (id: string, data: Omit<ConnectionConfig, 'id'>) => {
-  if (updateConnection(id, data)) {
-    ElMessage.success('连接配置已更新')
-  } else {
-    ElMessage.error('更新失败')
-  }
-}
-
-// 删除连接
-const deleteConnection = async (id: string) => {
+// 处理表单提交
+const handleSubmit = async (connectionData: ConnectionConfig) => {
   try {
-    await ElMessageBox.confirm(
-      '确定要删除这个连接配置吗？',
-      '确认删除',
-      {
-        confirmButtonText: '删除',
-        cancelButtonText: '取消',
-        type: 'warning'
-      }
-    )
+    modalRef.value?.setLoading(true)
     
-    if (removeConnection(id)) {
-      ElMessage.success('连接配置已删除')
+    if (currentConnection.value?.id) {
+      // 更新现有连接
+      updateConnection(currentConnection.value.id, connectionData)
+      ElMessage.success('连接配置已更新')
     } else {
-      ElMessage.error('删除失败')
+      // 添加新连接
+      addConnection(connectionData)
+      ElMessage.success('连接配置已保存')
     }
-  } catch {
-    // 用户取消删除
+    
+    modalVisible.value = false
+  } catch (error: any) {
+    console.error('Save connection failed:', error)
+    ElMessage.error(`保存失败：${error.message || '未知错误'}`)
+  } finally {
+    modalRef.value?.setLoading(false)
   }
 }
 
-// 测试连接并跳转
-const testAndConnect = async (connection: ConnectionConfig) => {
-  connectingId.value = connection.id!
+// 连接到数据库
+const connectToDatabase = async (connection: ConnectionConfig) => {
+  const connectionId = connection.id
+  if (!connectionId) return
+  
+  connectingIds.value.push(connectionId)
   
   try {
     // 设置当前连接
     setConnection(connection)
     
-    // 测试连接
+    // 检查连接健康状态
     const isHealthy = await healthCheck()
     
     if (isHealthy) {
-      ElMessage.success('连接成功！正在跳转到数据库管理页面...')
-      // 跳转到数据库管理页
-      await navigateTo(`/database?connection=${connection.id}`)
+      ElMessage.success('连接成功')
+      // 跳转到数据库管理页面
+      await router.push({
+        path: '/database',
+        query: { connection: connectionId }
+      })
     } else {
       ElMessage.error('连接失败，请检查服务器地址和端口')
     }
   } catch (error: any) {
-    console.error('Connection test failed:', error)
-    ElMessage.error(`连接失败：${error.message || '未知错误'}`)
+    console.error('Connection failed:', error)
+    ElMessage.error(`连接失败：${error.message || '服务器无响应'}`)
   } finally {
-    connectingId.value = null
+    const index = connectingIds.value.indexOf(connectionId)
+    if (index > -1) {
+      connectingIds.value.splice(index, 1)
+    }
+  }
+}
+
+// 删除连接
+const deleteConnection = async (connectionId: string | undefined) => {
+  if (!connectionId) return
+  
+  try {
+    await ElMessageBox.confirm(
+      '确定要删除这个连接配置吗？',
+      '确认删除',
+      {
+        confirmButtonText: '确认',
+        cancelButtonText: '取消',
+        type: 'warning'
+      }
+    )
+    
+    removeConnection(connectionId)
+    ElMessage.success('连接配置已删除')
+  } catch {
+    // 用户取消删除
   }
 }
 </script>
 
 <style scoped>
-.connection-page {
-  min-height: 100vh;
-  background-color: #f5f5f5;
-}
-
-.el-header {
-  background-color: #409eff;
-  color: white;
-  text-align: center;
-  padding: 20px 0;
-}
-
-.el-header h1 {
-  margin: 0;
-  font-size: 2em;
-}
-
-.el-header p {
-  margin: 10px 0 0 0;
-  opacity: 0.9;
-}
-
-.el-main {
-  padding: 20px;
-  max-width: 1200px;
+.connections-grid {
+  display: grid;
+  grid-template-columns: 1fr 300px;
+  gap: 24px;
+  max-width: 1600px;
   margin: 0 auto;
 }
 
-.action-card {
+.connections-container {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
+  gap: 20px;
+}
+
+.connection-card {
+  cursor: pointer;
+  transition: transform 0.2s ease;
+}
+
+.connection-card:hover {
+  transform: translateY(-2px);
+}
+
+.connection-item {
+  height: 100%;
+  border-radius: 12px;
+  border: 1px solid #e4e7ed;
+  overflow: hidden;
+}
+
+.connection-content {
+  padding: 20px;
+}
+
+.connection-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  margin-bottom: 16px;
+}
+
+.connection-title h3 {
+  margin: 0 0 8px 0;
+  font-size: 18px;
+  font-weight: 600;
+  color: #303133;
+  word-break: break-all;
+}
+
+.connection-actions {
+  display: flex;
+  gap: 8px;
+  opacity: 0.7;
+  transition: opacity 0.2s ease;
+}
+
+.connection-card:hover .connection-actions {
+  opacity: 1;
+}
+
+.danger-button {
+  color: #f56c6c !important;
+}
+
+.connection-details {
   margin-bottom: 20px;
 }
 
-.action-buttons {
+.detail-item {
   display: flex;
-  gap: 12px;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 8px;
+  color: #606266;
+  font-size: 14px;
+}
+
+.connection-footer {
+  margin-top: auto;
+}
+
+.empty-state {
+  grid-column: 1 / -1;
+  display: flex;
   justify-content: center;
-  padding: 10px 0;
+  align-items: center;
+  min-height: 300px;
 }
 
-.connection-list {
-  /* 样式已在全局定义 */
+.quick-start-panel {
+  position: sticky;
+  top: 24px;
+  height: fit-content;
 }
 
-.no-connections {
-  text-align: center;
-  padding: 40px 0;
+.quick-start-card {
+  border-radius: 12px;
+  border: 1px solid #e4e7ed;
 }
 
-.el-table {
-  margin-top: 0;
+.quick-start-header {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-weight: 600;
+  color: #409eff;
+}
+
+.quick-start-content {
+  padding: 0;
+}
+
+.step-item {
+  display: flex;
+  gap: 16px;
+  padding: 16px 0;
+  border-bottom: 1px solid #f0f2f5;
+}
+
+.step-item:last-child {
+  border-bottom: none;
+}
+
+.step-number {
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  background-color: #409eff;
+  color: white;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: 600;
+  font-size: 14px;
+  flex-shrink: 0;
+}
+
+.step-content h4 {
+  margin: 0 0 4px 0;
+  font-size: 16px;
+  font-weight: 600;
+  color: #303133;
+}
+
+.step-content p {
+  margin: 0;
+  color: #606266;
+  font-size: 14px;
+  line-height: 1.4;
+}
+
+.quick-start-actions {
+  padding-top: 16px;
+  border-top: 1px solid #f0f2f5;
+}
+
+/* 响应式设计 */
+@media (max-width: 1200px) {
+  .connections-grid {
+    grid-template-columns: 1fr;
+    gap: 20px;
+  }
+  
+  .quick-start-panel {
+    position: static;
+  }
+  
+  .connections-container {
+    grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+  }
 }
 
 @media (max-width: 768px) {
-  .el-main {
-    padding: 10px;
+  .connections-container {
+    grid-template-columns: 1fr;
   }
   
-  .el-header h1 {
-    font-size: 1.5em;
-  }
-
-  .action-buttons {
+  .connection-header {
     flex-direction: column;
-    align-items: center;
+    gap: 12px;
   }
-
-  .action-buttons .el-button {
-    width: 200px;
+  
+  .connection-actions {
+    align-self: flex-end;
   }
 }
 </style> 

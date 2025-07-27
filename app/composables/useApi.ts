@@ -2,8 +2,12 @@ import type {
   AuthInfo, 
   ListDatabasesRequest, 
   ListDatabasesResponse,
+  CreateDatabaseRequest,
+  CreateDatabaseResponse,
   ListCollectionsRequest,
   ListCollectionsResponse,
+  CreateCollectionRequest,
+  CreateCollectionResponse,
   ListEmbeddingModelsRequest,
   ListEmbeddingModelsResponse,
   EmbedAndInsertRequest,
@@ -11,7 +15,9 @@ import type {
   EmbedAndSearchRequest,
   SearchResponse,
   DeleteVectorsRequest,
-  DeleteVectorsResponse
+  DeleteVectorsResponse,
+  DistanceMetric,
+  HnswConfig
 } from '../../types/scintirete'
 
 // 连接配置接口
@@ -180,6 +186,18 @@ export function useApi() {
     })
   }
 
+  // 创建数据库
+  const createDatabase = async (name: string): Promise<CreateDatabaseResponse> => {
+    const request: CreateDatabaseRequest = {
+      auth: buildAuth(),
+      name
+    }
+    return await apiRequest<CreateDatabaseResponse>('/databases', {
+      method: 'POST',
+      data: request
+    })
+  }
+
   // 获取集合列表
   const listCollections = async (dbName: string): Promise<ListCollectionsResponse> => {
     const auth = buildAuth()
@@ -188,6 +206,26 @@ export function useApi() {
       headers: {
         'Authorization': `Bearer ${auth.password}`
       }
+    })
+  }
+
+  // 创建集合
+  const createCollection = async (
+    dbName: string,
+    collectionName: string,
+    metricType: DistanceMetric,
+    hnswConfig?: HnswConfig
+  ): Promise<CreateCollectionResponse> => {
+    const request: CreateCollectionRequest = {
+      auth: buildAuth(),
+      db_name: dbName,
+      collection_name: collectionName,
+      metric_type: metricType,
+      hnsw_config: hnswConfig
+    }
+    return await apiRequest<CreateCollectionResponse>(`/databases/${dbName}/collections`, {
+      method: 'POST',
+      data: request
     })
   }
 
@@ -269,7 +307,9 @@ export function useApi() {
     setConnection,
     healthCheck,
     listDatabases,
+    createDatabase,
     listCollections,
+    createCollection,
     listEmbeddingModels,
     embedAndInsert,
     embedAndSearch,

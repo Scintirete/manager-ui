@@ -1,0 +1,48 @@
+version: '3.8'
+
+services:
+  manager-ui:
+    image: scintirete/manager-ui:latest
+    container_name: scintirete-manager-ui
+    ports:
+      - "3000:3000"
+    environment:
+      - NODE_ENV=production
+      - NUXT_HOST=0.0.0.0
+      - NUXT_PORT=3000
+      # 您可以在这里设置其他环境变量
+      # - NUXT_PUBLIC_ENABLE_SERVER_PROXY=true
+      # - NUXT_PUBLIC_ENABLE_DB_DELETE=false
+      # - NUXT_PUBLIC_ENABLE_COLL_DELETE=false
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://localhost:3000/"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
+    networks:
+      - scintirete-network
+
+  # 如果您需要本地运行 Scintirete 服务器，可以取消注释以下配置
+  # scintirete-server:
+  #   image: scintirete/server:latest
+  #   container_name: scintirete-server
+  #   ports:
+  #     - "8080:8080"
+  #   volumes:
+  #     - scintirete-data:/data
+  #   environment:
+  #     - SERVER_HOST=0.0.0.0
+  #     - SERVER_PORT=8080
+  #   restart: unless-stopped
+  #   networks:
+  #     - scintirete-network
+
+networks:
+  scintirete-network:
+    driver: bridge
+
+# volumes:
+#   scintirete-data:
+#     driver: local 
