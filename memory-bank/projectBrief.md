@@ -44,6 +44,7 @@ Scintirete Manager UI - 高性能向量数据库管理工具
 
     - 操作：连接、删除
     - 点击连接后，调用 /health 检查联通性，成功的话进入数据库管理页
+  - 存储：所有配置放到 localstorage 中
 - 数据库管理页
 
   - 列表展示 GET /databases 返回的数据库名称、信息和操作
