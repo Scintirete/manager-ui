@@ -7,7 +7,8 @@
     "dev": "nuxt dev",
     "generate": "nuxt generate",
     "preview": "nuxt preview",
-    "postinstall": "nuxt prepare"
+    "postinstall": "nuxt prepare && pnpm run gen-types",
+    "gen-types": "tsx scripts/generate-types.ts"
   },
   "dependencies": {
     "@element-plus/icons-vue": "^2.3.1",
@@ -16,6 +17,10 @@
     "nuxt": "^4.0.1",
     "vue": "^3.5.17",
     "vue-router": "^4.5.1"
+  },
+  "devDependencies": {
+    "@types/node": "^22.0.0",
+    "tsx": "^4.0.0"
   },
   "packageManager": "pnpm@10.13.1+sha512.37ebf1a5c7a30d5fabe0c5df44ee8da4c965ca0c5af3dbab28c3a1681b70a256218d05c81c9c0dcf767ef6b8551eb5b960042b9ed4300c59242336377e01cfad"
 }
