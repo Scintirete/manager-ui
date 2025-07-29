@@ -85,6 +85,16 @@ export default defineEventHandler(async (event) => {
     const request: ApiRequest = await readBody(event)
     const config = useRuntimeConfig()
 
+    // 添加调试日志
+    if (request.method === 'DELETE' && request.endpoint.includes('/vectors')) {
+      console.log('=== DELETE Vectors Request Debug ===')
+      console.log('Endpoint:', request.endpoint)
+      console.log('Method:', request.method)
+      console.log('Data:', JSON.stringify(request.data, null, 2))
+      console.log('Headers:', JSON.stringify(request.headers, null, 2))
+      console.log('=====================================')
+    }
+
     if (!config.public.enableServerProxy) {
       throw createError({
         statusCode: 403,
@@ -122,6 +132,11 @@ export default defineEventHandler(async (event) => {
     return response
   } catch (error: any) {
     console.error('Proxy request failed:', error)
+    
+    // 为DELETE向量请求添加特殊错误日志
+    if (error.statusCode && error.data) {
+      console.error('Server response:', JSON.stringify(error.data, null, 2))
+    }
     
     // 统一错误处理
     if (error.code === 'ECONNREFUSED') {

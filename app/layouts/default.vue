@@ -1,24 +1,22 @@
 <template>
   <el-container class="layout-container">
     <!-- 顶部导航栏 -->
-    <!-- <el-header class="layout-header">
+    <el-header class="layout-header">
       <div class="header-content">
         <div class="logo-section">
-          <h1 class="logo">Scintirete Manager</h1>
-          <div class="connection-info" v-if="currentConnection">
-            <el-tag type="info" size="small">
-              {{ currentConnection.server }}:{{ currentConnection.port }}
-            </el-tag>
-            <el-tag :type="currentConnection.mode === 'proxy' ? 'warning' : 'success'" size="small">
-              {{ currentConnection.mode === 'proxy' ? '代理模式' : '直连模式' }}
-            </el-tag>
-          </div>
+          <NuxtLink to="/" style="text-decoration: none;">
+            <h1 class="logo">Scintirete Manager</h1>
+          </NuxtLink>
+          <ConnectionStatus 
+            :connection="currentConnection" 
+            :current-database="currentDatabase"
+          />
         </div>
         <div class="header-actions">
           <slot name="header-actions" />
         </div>
       </div>
-    </el-header> -->
+    </el-header>
 
     <!-- 主要内容区域 -->
     <el-container>
@@ -77,14 +75,15 @@
 </template>
 
 <script setup lang="ts">
-import { ref, computed } from 'vue'
-import { Connection, Document, Files } from '@element-plus/icons-vue'
 import type { ConnectionConfig } from '../composables/useApi'
+
+// 设置页面元信息
+useHead({
+  title: 'Scintirete Manager UI - 集合管理'
+})
 
 interface Props {
   pageTitle?: string
-  showSidebar?: boolean
-  showBreadcrumb?: boolean
   currentConnection?: ConnectionConfig | null
   currentDatabase?: string
   connectionId?: string
@@ -92,38 +91,11 @@ interface Props {
 
 const props = withDefaults(defineProps<Props>(), {
   pageTitle: '',
-  showSidebar: true,
-  showBreadcrumb: true,
   currentConnection: null,
   currentDatabase: '',
   connectionId: ''
 })
 
-const route = useRoute()
-const router = useRouter()
-
-const currentPath = computed(() => {
-  return route.path
-})
-
-const handleMenuSelect = async (key: string) => {
-  if (key === '/database' && props.connectionId) {
-    await router.push({
-      path: '/database',
-      query: { connection: props.connectionId }
-    })
-  } else if (key === '/collection' && props.connectionId && props.currentDatabase) {
-    await router.push({
-      path: '/collection',
-      query: { 
-        connection: props.connectionId,
-        database: props.currentDatabase
-      }
-    })
-  } else {
-    await router.push(key)
-  }
-}
 </script>
 
 <style scoped>
@@ -163,10 +135,7 @@ const handleMenuSelect = async (key: string) => {
   color: #409eff;
 }
 
-.connection-info {
-  display: flex;
-  gap: 8px;
-}
+
 
 .header-actions {
   display: flex;

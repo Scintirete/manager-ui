@@ -287,11 +287,6 @@ const handleSubmit = async () => {
     submitting.value = true
     
     emit('submit', form.value)
-    
-    // 搜索操作不关闭对话框，其他操作关闭
-    if (props.operation !== 'search') {
-      handleClose()
-    }
   } catch (error) {
     console.error('Form validation failed:', error)
   } finally {

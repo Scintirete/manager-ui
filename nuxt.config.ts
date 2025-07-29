@@ -22,8 +22,8 @@ export default defineNuxtConfig({
   runtimeConfig: {
     public: {
       enableServerProxy: true,    // 服务器转发模式开关
-      enableDbDelete: false,      // 数据库删除操作开关  
-      enableCollDelete: false     // 集合删除操作开关
+      enableDbDelete: true,      // 数据库删除操作开关  
+      enableCollDelete: true     // 集合删除操作开关
     }
   },
   vite: {

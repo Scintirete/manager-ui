@@ -145,7 +145,7 @@ const handleClose = () => {
 
 const resetForm = () => {
   form.name = ''
-  form.metricType = 2
+  form.metricType = 3
   form.hnswM = 16
   form.hnswEfConstruction = 200
   formRef.value?.clearValidate()

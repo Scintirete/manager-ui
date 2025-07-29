@@ -4,10 +4,14 @@ import type {
   ListDatabasesResponse,
   CreateDatabaseRequest,
   CreateDatabaseResponse,
+  DropDatabaseRequest,
+  DropDatabaseResponse,
   ListCollectionsRequest,
   ListCollectionsResponse,
   CreateCollectionRequest,
   CreateCollectionResponse,
+  DropCollectionRequest,
+  DropCollectionResponse,
   ListEmbeddingModelsRequest,
   ListEmbeddingModelsResponse,
   EmbedAndInsertRequest,
@@ -122,11 +126,25 @@ export function useApi() {
       }
 
       if (currentConnection.value.mode === 'proxy' && config.public.enableServerProxy) {
-        // 服务器转发模式 - 统一使用代理接口
-        return await $fetch<T>('/api/proxy', {
-          method: 'POST',
-          body: requestData
-        })
+        // 服务器转发模式 - 统一使用 axios 代理接口
+        const axiosInstance = await getAxios()
+        const url = `${requestData.baseUrl}${requestData.endpoint}`
+        const axiosConfig: any = {
+          url,
+          method: requestData.method.toLowerCase(),
+          headers: {
+            'Content-Type': 'application/json',
+            ...requestData.headers
+          },
+          timeout: 30000 // 30秒超时
+        }
+
+        if (requestData.method.toUpperCase() !== 'GET' && requestData.data) {
+          axiosConfig.data = requestData.data
+        }
+
+        const response = await axiosInstance(axiosConfig)
+        return response.data
       } else {
         // 客户端直连模式 - 仅在浏览器中使用
         if (typeof window === 'undefined') {
@@ -253,6 +271,20 @@ export function useApi() {
     })
   }
 
+  // 删除数据库（使用统一鉴权）
+  const dropDatabase = async (name: string): Promise<DropDatabaseResponse> => {
+    const request: DropDatabaseRequest = {
+      auth: {
+        password: currentConnection.value?.password || ''
+      },
+      name: name
+    }
+    return await apiRequest<DropDatabaseResponse>(`/databases/${name}`, {
+      method: 'DELETE',
+      data: request
+    })
+  }
+
   // 获取集合列表（使用统一鉴权）
   const listCollections = async (dbName: string): Promise<ListCollectionsResponse> => {
     return await apiRequest<ListCollectionsResponse>(`/databases/${dbName}/collections`)
@@ -276,6 +308,24 @@ export function useApi() {
     }
     return await apiRequest<CreateCollectionResponse>(`/databases/${dbName}/collections`, {
       method: 'POST',
+      data: request
+    })
+  }
+
+  // 删除集合（使用统一鉴权）
+  const dropCollection = async (
+    dbName: string,
+    collectionName: string
+  ): Promise<DropCollectionResponse> => {
+    const request: DropCollectionRequest = {
+      auth: {
+        password: currentConnection.value?.password || ''
+      },
+      db_name: dbName,
+      collection_name: collectionName
+    }
+    return await apiRequest<DropCollectionResponse>(`/databases/${dbName}/collections/${collectionName}`, {
+      method: 'DELETE',
       data: request
     })
   }
@@ -360,8 +410,10 @@ export function useApi() {
     validateConnection,
     listDatabases,
     createDatabase,
+    dropDatabase,
     listCollections,
     createCollection,
+    dropCollection,
     listEmbeddingModels,
     embedAndInsert,
     embedAndSearch,

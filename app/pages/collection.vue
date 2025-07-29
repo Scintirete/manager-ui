@@ -1,5 +1,10 @@
 <template>
-  <NuxtLayout name="default" page-title="集合管理">
+  <NuxtLayout 
+    name="default" 
+    page-title="集合管理"
+    :current-connection="currentConnection"
+    :current-database="currentDatabase"
+  >
     <template #page-actions>
       <el-button type="default" @click="goBack" style="margin-right: 16px;">
         <el-icon><ArrowLeft /></el-icon>
@@ -69,7 +74,7 @@
               <el-tag size="small">{{ getMetricTypeName(row.metric_type) }}</el-tag>
             </template>
           </el-table-column>
-          <el-table-column label="操作" width="300">
+          <el-table-column label="操作" width="360">
             <template #default="{ row }">
               <el-button 
                 type="primary" 
@@ -92,6 +97,27 @@
               >
                 删除向量
               </el-button>
+              <el-button 
+                v-if="config.public.enableCollDelete"
+                type="danger" 
+                size="small"
+                @click="deleteCollection(row)"
+              >
+                删除集合
+              </el-button>
+              <el-tooltip 
+                v-else
+                content="集合删除操作已被管理员禁用"
+                placement="top"
+              >
+                <el-button 
+                  type="danger" 
+                  size="small"
+                  disabled
+                >
+                  删除集合
+                </el-button>
+              </el-tooltip>
             </template>
           </el-table-column>
         </el-table>
@@ -128,14 +154,10 @@
 import { ArrowLeft, Refresh } from '@element-plus/icons-vue'
 import type { CollectionInfo, EmbeddingModel, SearchResultItem, DistanceMetric, HnswConfig } from '~/types/scintirete'
 
-// 设置页面元信息
-useHead({
-  title: 'Scintirete Manager UI - 集合管理'
-})
-
 // 获取路由参数
 const route = useRoute()
 const router = useRouter()
+const config = useRuntimeConfig()
 
 // API 管理
 const { 
@@ -143,6 +165,7 @@ const {
   setConnection, 
   listCollections, 
   createCollection,
+  dropCollection,
   listEmbeddingModels,
   embedAndInsert,
   embedAndSearch,
@@ -269,6 +292,36 @@ const handleCreateCollection = async (data: {
     ElMessage.error(`创建集合失败：${error.message || '未知错误'}`)
   } finally {
     createCollectionDialogRef.value?.setLoading(false)
+  }
+}
+
+// 删除集合
+const deleteCollection = async (collection: CollectionInfo) => {
+  try {
+    await ElMessageBox.confirm(
+      `确定要删除集合 "${collection.name}" 吗？此操作不可撤销！`,
+      '危险操作',
+      {
+        confirmButtonText: '确认删除',
+        cancelButtonText: '取消',
+        type: 'error',
+        confirmButtonClass: 'el-button--danger'
+      }
+    )
+    
+    const response = await dropCollection(currentDatabase.value, collection.name)
+    
+    if (response.success) {
+      ElMessage.success(`集合 "${collection.name}" 删除成功，共删除了 ${response.dropped_vectors} 个向量`)
+      await refreshCollections()
+    } else {
+      ElMessage.error(response.message || '删除集合失败')
+    }
+  } catch (error: any) {
+    if (error !== 'cancel') {
+      console.error('Delete collection failed:', error)
+      ElMessage.error(`删除集合失败：${error.message || '未知错误'}`)
+    }
   }
 }
 

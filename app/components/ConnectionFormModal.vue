@@ -61,6 +61,12 @@
             </span>
           </el-radio>
         </el-radio-group>
+        <p class="help-text" v-if="form.mode === 'client'">
+          适用于本地网络可连接到的向量数据库实例，不走服务器转发，所有网络操作均在本地执行<br>
+        </p>
+        <p class="help-text" v-else>
+          适用于本地网络直接访问不到向量数据库实例的情况，所有网络操作均通过服务器转发执行，如内网环境、docker 容器网络、k8s 内部网络等
+        </p>
       </el-form-item>
     </el-form>
     
@@ -194,3 +200,11 @@ defineExpose({
   }
 })
 </script> 
+
+<style scoped>
+.help-text {
+  color: #999;
+  font-size: 12px;
+  margin-top: 10px;
+}
+</style>

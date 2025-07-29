@@ -1,5 +1,9 @@
 <template>
-  <NuxtLayout name="default" page-title="数据库管理">
+  <NuxtLayout 
+    name="default" 
+    page-title="数据库管理"
+    :current-connection="currentConnection"
+  >
     <template #page-actions>
       <el-button type="default" @click="goBack" style="margin-right: 16px;">
         <el-icon><ArrowLeft /></el-icon>
@@ -111,7 +115,7 @@ const router = useRouter()
 const config = useRuntimeConfig()
 
 // API 和连接管理
-const { currentConnection, setConnection, listDatabases, createDatabase } = useApi()
+const { currentConnection, setConnection, listDatabases, createDatabase, dropDatabase } = useApi()
 const { getConnection } = useConnections()
 
 // 页面状态
@@ -227,10 +231,19 @@ const deleteDatabase = async (dbName: string) => {
       }
     )
     
-    // TODO: 实现删除数据库的API调用
-    ElMessage.warning('删除数据库功能待实现')
-  } catch {
-    // 用户取消删除
+    const response = await dropDatabase(dbName)
+    
+    if (response.success) {
+      ElMessage.success(`数据库 "${dbName}" 删除成功，共删除了 ${response.dropped_collections} 个集合`)
+      await refreshDatabases()
+    } else {
+      ElMessage.error(response.message || '删除数据库失败')
+    }
+  } catch (error: any) {
+    if (error !== 'cancel') {
+      console.error('Delete database failed:', error)
+      ElMessage.error(`删除数据库失败：${error.message || '未知错误'}`)
+    }
   }
 }
 

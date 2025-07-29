@@ -1,8 +1,8 @@
 <template>
-  <NuxtLayout name="default" 
+  <NuxtLayout 
+    name="default" 
+    :current-connection="currentConnection"
     page-title="连接管理" 
-    :show-sidebar="false"
-    :show-breadcrumb="false"
   >
     <template #page-actions>
       <el-button 
