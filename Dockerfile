@@ -28,12 +28,6 @@ RUN npm install -g pnpm
 # 设置工作目录
 WORKDIR /app
 
-# 复制 package.json 和 pnpm-lock.yaml
-COPY package.json pnpm-lock.yaml ./
-
-# 只安装生产依赖
-RUN pnpm install --prod --frozen-lockfile
-
 # 从构建阶段复制构建输出
 COPY --from=builder /app/.output ./.output
 COPY --from=builder /app/public ./public
