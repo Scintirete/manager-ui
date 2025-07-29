@@ -2,6 +2,7 @@ import type { ConnectionConfig } from './useApi'
 
 export function useConnections() {
   const connections = ref<ConnectionConfig[]>([])
+  const connectionLoading = ref(true)
   
   // 从localStorage加载连接配置
   const loadConnections = () => {
@@ -16,6 +17,7 @@ export function useConnections() {
         }
       }
     }
+    connectionLoading.value = false
   }
 
   // 保存连接配置到localStorage
@@ -46,7 +48,13 @@ export function useConnections() {
   const updateConnection = (id: string, updates: Partial<ConnectionConfig>): boolean => {
     const index = connections.value.findIndex(conn => conn.id === id)
     if (index !== -1) {
-      connections.value[index] = { ...connections.value[index], ...updates } as ConnectionConfig
+      // 使用对象展开来确保响应式更新
+      const updatedConnection = { ...connections.value[index], ...updates } as ConnectionConfig
+      // 确保名称字段正确设置
+      if (!updatedConnection.name) {
+        updatedConnection.name = `${updatedConnection.server}:${updatedConnection.port}`
+      }
+      connections.value[index] = updatedConnection
       saveConnections()
       return true
     }
@@ -76,6 +84,7 @@ export function useConnections() {
 
   return {
     connections: readonly(connections),
+    connectionLoading,
     addConnection,
     updateConnection,
     removeConnection,

@@ -34,12 +34,12 @@
         </template>
         
         <!-- 加载状态 -->
-        <div v-if="loading && !collections.length" class="loading-container">
+        <div v-if="loading" class="loading-container">
           <el-skeleton :rows="3" animated />
         </div>
         
         <!-- 空状态 -->
-        <div v-else-if="!collections.length && !loading" class="no-collections">
+        <div v-else-if="!collections.length" class="no-collections">
           <el-empty description="没有找到集合">
             <el-button type="primary" @click="showCreateCollectionDialog">创建集合</el-button>
           </el-empty>
@@ -104,7 +104,14 @@
         :embedding-models="embeddingModels"
         :models-loading="modelsLoading"
         :search-results="searchResults"
+        :operation-loading="operationLoading"
         @submit="handleVectorOperation"
+      />
+
+      <!-- 插入结果模态框 -->
+      <InsertResultModal
+        v-model:visible="insertResultDialogVisible"
+        :result="insertResult"
       />
 
       <!-- 创建集合模态框 -->
@@ -146,6 +153,7 @@ const { getConnection } = useConnections()
 // 页面状态
 const loading = ref(false)
 const modelsLoading = ref(false)
+const operationLoading = ref(false)
 
 const collections = ref<CollectionInfo[]>([])
 const embeddingModels = ref<EmbeddingModel[]>([])
@@ -158,6 +166,8 @@ const currentOperation = ref<'insert' | 'search' | 'delete'>('insert')
 const searchResults = ref<SearchResultItem[]>([])
 const createCollectionDialogVisible = ref(false)
 const createCollectionDialogRef = ref()
+const insertResultDialogVisible = ref(false)
+const insertResult = ref<{ inserted_ids: string[]; inserted_count: number } | null>(null)
 
 // 初始化连接和数据
 const initializePage = async () => {
@@ -180,43 +190,51 @@ const initializePage = async () => {
   setConnection(connection)
   currentDatabase.value = dbName
   
-  await Promise.all([
-    loadCollections(),
-    loadEmbeddingModels()
-  ])
+  // 设置页面loading状态
+  loading.value = true
+  modelsLoading.value = true
+  
+  try {
+    await Promise.all([
+      loadCollections(),
+      loadEmbeddingModels()
+    ])
+  } finally {
+    loading.value = false
+    modelsLoading.value = false
+  }
 }
 
 // 加载集合列表
 const loadCollections = async () => {
-  loading.value = true
   try {
     const response = await listCollections(currentDatabase.value)
     collections.value = response.collections || []
   } catch (error: any) {
     console.error('Failed to load collections:', error)
     ElMessage.error(`加载集合列表失败：${error.message || '未知错误'}`)
-  } finally {
-    loading.value = false
   }
 }
 
 // 加载嵌入模型列表
 const loadEmbeddingModels = async () => {
-  modelsLoading.value = true
   try {
     const response = await listEmbeddingModels()
     embeddingModels.value = response.models || []
   } catch (error: any) {
     console.error('Failed to load embedding models:', error)
     ElMessage.error(`加载嵌入模型列表失败：${error.message || '未知错误'}`)
-  } finally {
-    modelsLoading.value = false
   }
 }
 
 // 刷新集合列表
 const refreshCollections = async () => {
-  await loadCollections()
+  loading.value = true
+  try {
+    await loadCollections()
+  } finally {
+    loading.value = false
+  }
 }
 
 // 显示创建集合对话框
@@ -266,6 +284,10 @@ const showVectorDialog = (operation: 'insert' | 'search' | 'delete', collection:
 const handleVectorOperation = async (formData: any) => {
   if (!currentCollection.value) return
 
+  const operationName = currentOperation.value === 'insert' ? '插入' : 
+                       currentOperation.value === 'search' ? '搜索' : '删除'
+  
+  operationLoading.value = true
   try {
     switch (currentOperation.value) {
       case 'insert':
@@ -280,7 +302,9 @@ const handleVectorOperation = async (formData: any) => {
     }
   } catch (error: any) {
     console.error(`${currentOperation.value} operation failed:`, error)
-    ElMessage.error(`操作失败：${error.message || '未知错误'}`)
+    ElMessage.error(`${operationName}操作失败：${error.message || '未知错误'}`)
+  } finally {
+    operationLoading.value = false
   }
 }
 
@@ -308,7 +332,13 @@ const handleInsert = async (formData: any) => {
     formData.model || undefined
   )
 
-  ElMessage.success(`成功插入 ${response.inserted_count} 个向量`)
+  // 设置插入结果并显示弹窗
+  insertResult.value = {
+    inserted_ids: response.inserted_ids.map((id: any) => String(id)),
+    inserted_count: response.inserted_count
+  }
+  insertResultDialogVisible.value = true
+  
   vectorDialogVisible.value = false
   await refreshCollections()
 }

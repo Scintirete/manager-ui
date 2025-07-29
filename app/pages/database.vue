@@ -33,12 +33,12 @@
         </template>
         
         <!-- 加载状态 -->
-        <div v-if="loading && !databases.length" class="loading-container">
+        <div v-if="loading" class="loading-container">
           <el-skeleton :rows="5" animated />
         </div>
         
         <!-- 空状态 -->
-        <div v-else-if="!databases.length && !loading" class="no-databases">
+        <div v-else-if="!databases.length" class="no-databases">
           <el-empty description="没有找到数据库">
             <el-button type="primary" @click="showCreateDialog">创建数据库</el-button>
           </el-empty>
@@ -137,14 +137,20 @@ const initializeConnection = async () => {
   }
 
   setConnection(connection)
-  await loadDatabases()
+  
+  // 设置页面loading状态
+  loading.value = true
+  try {
+    await loadDatabases()
+  } finally {
+    loading.value = false
+  }
 }
 
 // 加载数据库列表
 const loadDatabases = async () => {
   if (!currentConnection.value) return
   
-  loading.value = true
   try {
     const response = await listDatabases()
     databases.value = response.names || []
@@ -156,14 +162,17 @@ const loadDatabases = async () => {
     if (error.status === 401 || error.status === 403) {
       await router.push('/')
     }
-  } finally {
-    loading.value = false
   }
 }
 
 // 刷新数据库列表
 const refreshDatabases = async () => {
-  await loadDatabases()
+  loading.value = true
+  try {
+    await loadDatabases()
+  } finally {
+    loading.value = false
+  }
 }
 
 // 管理集合

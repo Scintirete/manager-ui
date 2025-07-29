@@ -31,6 +31,7 @@
             :disabled="!model.available"
           />
         </el-select>
+        <p class="help-text">注意：插入和搜索需要用同一个模型</p>
       </el-form-item>
 
       <!-- 文本内容 (插入操作) -->
@@ -118,6 +119,7 @@
     <!-- 搜索结果展示 -->
     <div v-if="operation === 'search' && searchResults.length > 0" class="search-results">
       <h4>搜索结果：</h4>
+      <p class="help-text">注：搜索结果最接近的在前面，内积值 INNER_PRODUCT 越小越接近，向量数据库中不存储原始信息，请通过 ID 或 metadata 对源数据做关联</p>
       <el-table :data="searchResults" size="small" max-height="300">
         <el-table-column prop="id" label="ID" width="80" />
         <el-table-column prop="distance" label="距离" width="100">
@@ -140,7 +142,7 @@
       <el-button 
         :type="operation === 'delete' ? 'danger' : 'primary'"
         @click="handleSubmit"
-        :loading="submitting"
+        :loading="submitting || operationLoading"
       >
         {{ getSubmitButtonText() }}
       </el-button>
@@ -158,6 +160,7 @@ interface Props {
   embeddingModels?: EmbeddingModel[]
   modelsLoading?: boolean
   searchResults?: SearchResultItem[]
+  operationLoading?: boolean
 }
 
 interface FormData {
@@ -178,7 +181,8 @@ interface Emits {
 const props = withDefaults(defineProps<Props>(), {
   embeddingModels: () => [],
   modelsLoading: false,
-  searchResults: () => []
+  searchResults: () => [],
+  operationLoading: false
 })
 
 const emit = defineEmits<Emits>()
@@ -283,7 +287,6 @@ const handleSubmit = async () => {
     submitting.value = true
     
     emit('submit', form.value)
-    submitting.value = false
     
     // 搜索操作不关闭对话框，其他操作关闭
     if (props.operation !== 'search') {
@@ -291,6 +294,7 @@ const handleSubmit = async () => {
     }
   } catch (error) {
     console.error('Form validation failed:', error)
+  } finally {
     submitting.value = false
   }
 }
@@ -335,5 +339,11 @@ code {
   padding: 2px 4px;
   border-radius: 3px;
   font-size: 12px;
+}
+
+.help-text {
+  color: #999;
+  font-size: 12px;
+  margin-top: 10px;
 }
 </style> 

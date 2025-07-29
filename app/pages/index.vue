@@ -15,8 +15,13 @@
     </template>
 
     <div class="connections-grid">
+      <!-- 页面加载状态 -->
+      <div v-if="connectionLoading" class="page-loading">
+        <el-skeleton :rows="3" animated />
+      </div>
+      
       <!-- 连接卡片网格 -->
-      <div class="connections-container">
+      <div v-else class="connections-container">
         <!-- 连接卡片 -->
         <div 
           v-for="connection in connections" 
@@ -38,7 +43,7 @@
                 </div>
                 <div class="connection-actions" @click.stop>
                   <el-button 
-                    type="text" 
+                    type="primary" 
                     size="small"
                     @click="editConnection(connection)"
                     :icon="Edit"
@@ -46,11 +51,10 @@
                     编辑
                   </el-button>
                   <el-button 
-                    type="text" 
+                    type="danger" 
                     size="small"
                     @click="deleteConnection(connection.id)"
                     :icon="Delete"
-                    class="danger-button"
                   >
                     删除
                   </el-button>
@@ -62,9 +66,14 @@
                   <el-icon><Monitor /></el-icon>
                   <span>{{ connection.server }}:{{ connection.port }}</span>
                 </div>
-                <div class="detail-item" v-if="connection.password">
+                <div class="detail-item">
                   <el-icon><Lock /></el-icon>
-                  <span>需要密码验证</span>
+                  <span v-if="connection.password">需要密码验证</span>
+                  <span v-else>无需密码验证</span>
+                </div>
+                <div class="detail-item">
+                  <el-icon><Position /></el-icon>
+                  <span>{{ connection.mode === 'proxy' ? '代理模式' : '直连模式' }}</span>
                 </div>
               </div>
 
@@ -93,7 +102,7 @@
       </div>
 
       <!-- 快速开始面板 -->
-      <div class="quick-start-panel">
+      <div v-if="!connectionLoading" class="quick-start-panel">
         <el-card shadow="never" class="quick-start-card">
           <template #header>
             <div class="quick-start-header">
@@ -143,13 +152,14 @@
       :connection="currentConnection"
       :server-proxy-disabled="!config.public.enableServerProxy"
       @submit="handleSubmit"
+      @update="handleUpdate"
       ref="modalRef"
     />
   </NuxtLayout>
 </template>
 
 <script setup lang="ts">
-import { Plus, Edit, Delete, Monitor, Lock, QuestionFilled } from '@element-plus/icons-vue'
+import { Plus, Edit, Delete, Monitor, Lock, QuestionFilled, Position } from '@element-plus/icons-vue'
 import type { ConnectionConfig } from '~/composables/useApi'
 
 // 设置页面元信息
@@ -161,7 +171,7 @@ const config = useRuntimeConfig()
 const router = useRouter()
 
 // 连接管理
-const { connections, addConnection, updateConnection, removeConnection } = useConnections()
+const { connections, connectionLoading, addConnection, updateConnection, removeConnection } = useConnections()
 const { setConnection, validateConnection } = useApi()
 
 // 组件状态
@@ -177,7 +187,8 @@ const showCreateModal = () => {
 }
 
 const editConnection = (connection: ConnectionConfig) => {
-  currentConnection.value = { ...connection }
+  // 深拷贝连接配置以避免直接修改原始对象
+  currentConnection.value = JSON.parse(JSON.stringify(connection))
   modalVisible.value = true
 }
 
@@ -186,20 +197,34 @@ const handleSubmit = async (connectionData: ConnectionConfig) => {
   try {
     modalRef.value?.setLoading(true)
     
-    if (currentConnection.value?.id) {
-      // 更新现有连接
-      updateConnection(currentConnection.value.id, connectionData)
-      ElMessage.success('连接配置已更新')
-    } else {
-      // 添加新连接
-      addConnection(connectionData)
-      ElMessage.success('连接配置已保存')
-    }
+    // 添加新连接
+    addConnection(connectionData)
+    ElMessage.success('连接配置已保存')
     
     modalVisible.value = false
   } catch (error: any) {
     console.error('Save connection failed:', error)
     ElMessage.error(`保存失败：${error.message || '未知错误'}`)
+  } finally {
+    modalRef.value?.setLoading(false)
+  }
+}
+
+const handleUpdate = async (id: string, connectionData: ConnectionConfig) => {
+  modalRef.value?.setLoading(true)
+  try {
+    // 更新现有连接
+    const success = updateConnection(id, connectionData)
+    modalVisible.value = false
+    if (success) {
+      ElMessage.success('连接配置已更新')
+    } else {
+      ElMessage.error('连接配置更新失败')
+      return
+    }
+  } catch (error: any) {
+    console.error('Update connection failed:', error)
+    ElMessage.error(`更新失败：${error.message || '未知错误'}`)
   } finally {
     modalRef.value?.setLoading(false)
   }
@@ -277,6 +302,11 @@ const deleteConnection = async (connectionId: string | undefined) => {
   display: grid;
   grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
   gap: 20px;
+}
+
+.page-loading {
+  grid-column: 1 / -1;
+  padding: 40px 20px;
 }
 
 .connection-card {
