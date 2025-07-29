@@ -26,9 +26,9 @@
         <!-- 空状态 -->
         <div v-else-if="showEmpty && !loading" class="empty-container">
           <el-empty :description="emptyDescription">
-            <template #default v-if="$slots.empty">
+            <div v-if="$slots.empty">
               <slot name="empty" />
-            </template>
+            </div>
             <el-button v-else type="primary" @click="$emit('refresh')">
               重新加载
             </el-button>

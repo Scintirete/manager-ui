@@ -33,7 +33,13 @@
         </el-select>
       </el-form-item>
 
-      <el-divider content-position="left">HNSW 参数配置</el-divider>
+      <el-divider content-position="center">HNSW 参数配置</el-divider>
+
+      <el-form-item>
+        <div class="form-help">
+          可参考文档：<a href="https://github.com/Scintirete/Scintirete/blob/main/docs/usage/1_HNSW_%E8%B6%85%E5%8F%82%E6%95%B0%E8%B0%83%E6%95%B4.md" target="_blank">HNSW_超参数调整</a> 进行定制化调整
+        </div>
+      </el-form-item>
 
       <el-form-item label="M 参数" prop="hnswM">
         <el-input-number
@@ -80,7 +86,7 @@
 <script setup lang="ts">
 import { ref, reactive, computed, watch, nextTick } from 'vue'
 import type { FormInstance, FormRules } from 'element-plus'
-import { DistanceMetric, type HnswConfig } from '../../types/scintirete'
+import { DistanceMetric, type HnswConfig } from '~/types/scintirete.d.ts'
 
 interface Props {
   visible: boolean
@@ -103,7 +109,7 @@ const loading = ref(false)
 
 const form = reactive({
   name: '',
-  metricType: 2 as DistanceMetric, // 默认使用 Cosine
+  metricType: DistanceMetric.INNER_PRODUCT as DistanceMetric,
   hnswM: 16,
   hnswEfConstruction: 200
 })

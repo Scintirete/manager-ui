@@ -1,7 +1,7 @@
 <template>
   <NuxtLayout name="default" page-title="集合管理">
     <template #page-actions>
-      <el-button type="text" @click="goBack" style="margin-right: 16px;">
+      <el-button type="default" @click="goBack" style="margin-right: 16px;">
         <el-icon><ArrowLeft /></el-icon>
         返回数据库列表
       </el-button>
@@ -41,7 +41,7 @@
         <!-- 空状态 -->
         <div v-else-if="!collections.length && !loading" class="no-collections">
           <el-empty description="没有找到集合">
-            <el-button type="primary" @click="refreshCollections">重新加载</el-button>
+            <el-button type="primary" @click="showCreateCollectionDialog">创建集合</el-button>
           </el-empty>
         </div>
         
@@ -119,7 +119,7 @@
 
 <script setup lang="ts">
 import { ArrowLeft, Refresh } from '@element-plus/icons-vue'
-import type { CollectionInfo, EmbeddingModel, SearchResultItem, DistanceMetric, HnswConfig } from '../../types/scintirete'
+import type { CollectionInfo, EmbeddingModel, SearchResultItem, DistanceMetric, HnswConfig } from '~/types/scintirete'
 
 // 设置页面元信息
 useHead({
@@ -368,7 +368,8 @@ const handleDelete = async (formData: any) => {
 }
 
 // 工具函数
-const formatBytes = (bytes: number): string => {
+const formatBytes = (bytes_str: string): string => {
+  const bytes = parseInt(bytes_str)
   if (bytes === 0) return '0 B'
   const k = 1024
   const sizes = ['B', 'KB', 'MB', 'GB']

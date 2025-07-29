@@ -90,7 +90,7 @@
       </el-form-item>
 
       <!-- 过滤条件 (搜索操作) -->
-      <el-form-item 
+      <!-- <el-form-item 
         v-if="operation === 'search'"
         label="过滤条件"
       >
@@ -98,7 +98,7 @@
           v-model="form.filter"
           placeholder="可选，元数据过滤条件"
         />
-      </el-form-item>
+      </el-form-item> -->
 
       <!-- 向量ID列表 (删除操作) -->
       <el-form-item 
@@ -150,7 +150,7 @@
 
 <script setup lang="ts">
 import type { FormInstance, FormRules } from 'element-plus'
-import type { EmbeddingModel, SearchResultItem } from '../../types/scintirete'
+import type { EmbeddingModel, SearchResultItem } from '~/types/scintirete'
 
 interface Props {
   visible: boolean

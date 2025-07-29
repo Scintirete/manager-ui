@@ -18,7 +18,7 @@ import type {
   DeleteVectorsResponse,
   DistanceMetric,
   HnswConfig
-} from '../../types/scintirete'
+} from '~/types/scintirete'
 
 // 连接配置接口
 export interface ConnectionConfig {

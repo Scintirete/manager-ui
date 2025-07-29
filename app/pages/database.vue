@@ -1,7 +1,7 @@
 <template>
   <NuxtLayout name="default" page-title="数据库管理">
     <template #page-actions>
-      <el-button type="text" @click="goBack" style="margin-right: 16px;">
+      <el-button type="default" @click="goBack" style="margin-right: 16px;">
         <el-icon><ArrowLeft /></el-icon>
         返回连接配置
       </el-button>
@@ -40,7 +40,7 @@
         <!-- 空状态 -->
         <div v-else-if="!databases.length && !loading" class="no-databases">
           <el-empty description="没有找到数据库">
-            <el-button type="primary" @click="refreshDatabases">重新加载</el-button>
+            <el-button type="primary" @click="showCreateDialog">创建数据库</el-button>
           </el-empty>
         </div>
         
