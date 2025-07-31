@@ -11,96 +11,9 @@ permissions:
 
 env:
   REGISTRY: ghcr.io
-  IMAGE_NAME: ${{ github.repository }}
+  IMAGE_NAME: scintirete/manager-ui
 
 jobs:
-  # 构建前端应用和创建发布包
-  build:
-    runs-on: ubuntu-latest
-    strategy:
-      matrix:
-        include:
-          # 不同格式的压缩包
-          - format: tar.gz
-            name: linux
-          - format: zip
-            name: windows
-
-    steps:
-    - name: Checkout code
-      uses: actions/checkout@v4
-
-    - name: Setup Node.js
-      uses: actions/setup-node@v4
-      with:
-        node-version: '22'
-        cache: 'npm'
-      
-    - name: Setup pnpm
-      run: npm install -g pnpm
-
-    - name: Install dependencies
-      run: pnpm install
-
-    - name: Generate types
-      run: pnpm run gen-types
-
-    - name: Build application
-      run: pnpm run build
-
-    - name: Run tests
-      run: pnpm run test
-
-    - name: Create distribution package
-      run: |
-        # Create output directory
-        mkdir -p dist
-        
-        # Extract version from tag (remove 'v' prefix)
-        VERSION=${GITHUB_REF_NAME#v}
-        
-        # Copy built files
-        cp -r .output dist/
-        cp -r public dist/
-        cp package.json dist/
-        cp README.md dist/ 2>/dev/null || echo "README.md not found, skipping"
-        cp docker-compose.yaml dist/ 2>/dev/null || echo "docker-compose.yaml not found, skipping"
-        
-        # Create startup script
-        cat > dist/start.sh << 'EOF'
-        #!/bin/bash
-        cd "$(dirname "$0")"
-        echo "Starting Scintirete Manager UI..."
-        node .output/server/index.mjs
-        EOF
-        chmod +x dist/start.sh
-        
-        # Create Windows batch file
-        cat > dist/start.bat << 'EOF'
-        @echo off
-        cd /d "%~dp0"
-        echo Starting Scintirete Manager UI...
-        node .output/server/index.mjs
-        EOF
-
-    - name: Create archive
-      run: |
-        cd dist
-        if [ "${{ matrix.format }}" = "zip" ]; then
-          # Create zip for Windows
-          zip -r ../manager-ui-${{ matrix.name }}-${GITHUB_REF_NAME#v}.zip .
-        else
-          # Create tar.gz for Unix-like systems
-          tar -czf ../manager-ui-${{ matrix.name }}-${GITHUB_REF_NAME#v}.tar.gz .
-        fi
-
-    - name: Upload artifacts
-      uses: actions/upload-artifact@v4
-      with:
-        name: manager-ui-${{ matrix.name }}-${{ github.ref_name }}
-        path: manager-ui-${{ matrix.name }}-*.tar.gz manager-ui-${{ matrix.name }}-*.zip
-        if-no-files-found: ignore
-
   # Docker 镜像构建和推送
   docker:
     runs-on: ubuntu-latest
@@ -146,21 +59,11 @@ jobs:
 
   # 创建 GitHub Release
   create-release:
-    needs: [build, docker]
+    needs: [docker]
     runs-on: ubuntu-latest
     steps:
     - name: Checkout code
       uses: actions/checkout@v4
-
-    - name: Download all artifacts
-      uses: actions/download-artifact@v4
-      with:
-        path: ./artifacts
-
-    - name: Prepare release assets
-      run: |
-        mkdir -p release-assets
-        find ./artifacts -name "*.tar.gz" -o -name "*.zip" | xargs -I {} cp {} release-assets/
 
     - name: Create Release
       env:
@@ -172,52 +75,21 @@ jobs:
         
         **Scintirete Manager UI** - 基于 Nuxt.js 的向量数据库管理界面
         
-        ### 📦 下载包
-        
-        选择适合您的版本：
-        
-        #### 预构建包
-        - `manager-ui-linux-${{ github.ref_name }}.tar.gz` - Linux/macOS 版本（包含启动脚本）
-        - `manager-ui-windows-${{ github.ref_name }}.zip` - Windows 版本（包含批处理文件）
-        
         ### 🐳 Docker 镜像
         
         Docker 镜像已自动推送到 GitHub Container Registry：
         
         ```bash
         # 拉取指定版本
-        docker pull ghcr.io/${{ github.repository }}:${{ github.ref_name }}
+        docker pull ghcr.io/scintirete/manager-ui:${{ github.ref_name }}
         
         # 拉取 latest 版本
-        docker pull ghcr.io/${{ github.repository }}:latest
+        docker pull ghcr.io/scintirete/manager-ui:latest
         ```
         
         ### 🚀 快速开始
         
-        #### 使用预构建包
-        
-        **Linux/macOS:**
-        ```bash
-        # 下载并解压
-        wget https://github.com/${{ github.repository }}/releases/download/${{ github.ref_name }}/manager-ui-linux-${{ github.ref_name }}.tar.gz
-        tar -xzf manager-ui-linux-${{ github.ref_name }}.tar.gz
-        cd manager-ui-linux-${{ github.ref_name }}
-        
-        # 启动应用
-        ./start.sh
-        ```
-        
-        **Windows:**
-        ```cmd
-        # 下载并解压 manager-ui-windows-${{ github.ref_name }}.zip
-        # 进入解压目录，双击运行 start.bat
-        # 或在命令行中：
-        start.bat
-        ```
-        
-        #### 使用 Docker
-        
-        **Docker Compose (推荐):**
+        #### 使用 Docker Compose (推荐)
         ```bash
         # 下载 docker-compose.yaml
         wget https://raw.githubusercontent.com/${{ github.repository }}/main/docker-compose.yaml
@@ -226,12 +98,12 @@ jobs:
         docker-compose up -d
         ```
         
-        **直接运行:**
+        #### 直接运行
         ```bash
         docker run -d \
           --name manager-ui \
           -p 3000:3000 \
-          ghcr.io/${{ github.repository }}:${{ github.ref_name }}
+          ghcr.io/scintirete/manager-ui:${{ github.ref_name }}
         ```
         
         ### 📝 环境变量配置
@@ -261,5 +133,4 @@ jobs:
         gh release create "${{ github.ref_name }}" \
           --title "Manager UI ${{ github.ref_name }}" \
           --notes-file release_notes.md \
-          $PRERELEASE_FLAG \
-          release-assets/*
+          $PRERELEASE_FLAG

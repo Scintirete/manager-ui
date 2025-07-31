@@ -2,7 +2,7 @@ version: '3.8'
 
 services:
   manager-ui:
-    image: scintirete/manager-ui:latest
+    image: ghcr.io/scintirete/manager-ui:latest
     container_name: scintirete-manager-ui
     ports:
       - "3000:3000"
@@ -26,8 +26,8 @@ services:
 
   # 如果您需要本地运行 Scintirete 服务器，可以取消注释以下配置
   # scintirete-server:
-  #   image: scintirete/server:latest
-  #   container_name: scintirete-server
+  #   image: ghcr.io/scintirete/scintirete:latest
+  #   container_name: scintirete
   #   ports:
   #     - "8080:8080"
   #   volumes:

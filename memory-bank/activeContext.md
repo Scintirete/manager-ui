@@ -57,6 +57,13 @@
 ### 进行中
 暂无
 
+### 最新完成（Release工作流优化）
+1. **简化Release工作流**
+   - 移除前端应用打包（tar.gz/zip）
+   - 移除复杂的Release资产创建
+   - 保留Docker镜像构建和GitHub Release创建
+   - 修复镜像名称大小写问题：硬编码为 `scintirete/manager-ui`
+
 ### 下一步计划
 1. 实现 RAG Bot 功能
 2. 添加高级向量操作
