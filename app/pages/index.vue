@@ -150,7 +150,7 @@
     <ConnectionFormModal
       v-model:visible="modalVisible"
       :connection="currentConnection"
-      :server-proxy-disabled="!config.public.enableServerProxy"
+      :enable-server-proxy="config.public.enableServerProxy"
       @submit="handleSubmit"
       @update="handleUpdate"
       ref="modalRef"

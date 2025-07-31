@@ -91,12 +91,26 @@
                 搜索向量
               </el-button>
               <el-button 
+                v-if="config.public.enableVectorDelete"
                 type="warning" 
                 size="small"
                 @click="showVectorDialog('delete', row)"
               >
                 删除向量
               </el-button>
+              <el-tooltip 
+                v-else
+                content="向量删除操作已被管理员禁用"
+                placement="top"
+              >
+                <el-button 
+                  type="warning" 
+                  size="small"
+                  disabled
+                >
+                  删除向量
+                </el-button>
+              </el-tooltip>
               <el-button 
                 v-if="config.public.enableCollDelete"
                 type="danger" 

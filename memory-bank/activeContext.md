@@ -64,6 +64,20 @@
    - 保留Docker镜像构建和GitHub Release创建
    - 修复镜像名称大小写问题：硬编码为 `scintirete/manager-ui`
 
+### 最新完成（权限控制和Release修正）🆕
+1. **Release工作流修正**
+   - 修正Docker镜像latest标签推送问题：移除`enable={{is_default_branch}}`条件
+   - 现在所有release版本都会自动推送latest标签到GitHub Container Registry
+
+2. **服务器转发模式控制修正**
+   - 修正属性传递问题：统一使用`enable-server-proxy`属性名
+   - 确保`NUXT_PUBLIC_ENABLE_SERVER_PROXY=false`时正确禁用服务器转发模式选项
+   
+3. **向量删除权限控制**
+   - 新增`enableVectorDelete`配置项控制向量删除功能
+   - 在集合管理页面中根据配置显示/隐藏删除向量按钮
+   - 被禁用时显示禁用提示信息
+
 ### 下一步计划
 1. 实现 RAG Bot 功能
 2. 添加高级向量操作
