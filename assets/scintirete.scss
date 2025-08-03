@@ -843,3 +843,34 @@ body {
   box-shadow: 0 8px 25px rgba(0, 0, 0, 0.15) !important;
   font-weight: 500 !important;
 }
+
+/* GitHub Dropdown Enhancements */
+.github-dropdown {
+  border-radius: var(--sc-radius-lg) !important;
+  box-shadow: 0 12px 32px rgba(0, 0, 0, 0.15) !important;
+  border: 1px solid var(--sc-border-light) !important;
+  padding: var(--sc-space-sm) !important;
+  min-width: 240px !important;
+  background: var(--sc-bg-primary) !important;
+}
+
+.github-dropdown .el-dropdown-menu__item {
+  padding: var(--sc-space-sm) var(--sc-space-md) !important;
+  border-radius: var(--sc-radius-sm) !important;
+  margin-bottom: var(--sc-space-xs) !important;
+  transition: all var(--sc-transition-fast) !important;
+}
+
+.github-dropdown .el-dropdown-menu__item:last-child {
+  margin-bottom: 0 !important;
+}
+
+.github-dropdown .el-dropdown-menu__item:hover {
+  background: var(--sc-bg-secondary) !important;
+  color: var(--sc-text-primary) !important;
+}
+
+.github-dropdown .el-dropdown-menu__item:focus {
+  background: var(--sc-bg-secondary) !important;
+  color: var(--sc-text-primary) !important;
+}

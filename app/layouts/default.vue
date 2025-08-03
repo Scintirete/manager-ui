@@ -20,6 +20,44 @@
         </div>
         <div class="header-actions">
           <slot name="header-actions" />
+          <!-- GitHub 链接 -->
+          <div class="github-links">
+            <el-dropdown trigger="hover" placement="bottom-end">
+              <div class="github-button">
+                <el-icon class="github-icon"><Link /></el-icon>
+                <span class="github-text">文档和资源</span>
+                <el-icon class="dropdown-arrow"><ArrowDown /></el-icon>
+              </div>
+              <template #dropdown>
+                <el-dropdown-menu class="github-dropdown">
+                  <el-dropdown-item>
+                    <a href="http://scintirete.cloud.wj2015.com/" target="_blank" class="github-link">
+                      <el-icon><Document /></el-icon>
+                      <div class="link-content">
+                        <div class="link-title">Scintirete 官网及文档</div>
+                      </div>
+                    </a>
+                  </el-dropdown-item>
+                  <el-dropdown-item>
+                    <a href="https://github.com/Scintirete/Scintirete/" target="_blank" class="github-link">
+                      <el-icon><Link /></el-icon>
+                      <div class="link-content">
+                        <div class="link-title">Scintirete 开源地址</div>
+                      </div>
+                    </a>
+                  </el-dropdown-item>
+                  <el-dropdown-item>
+                    <a href="https://github.com/Scintirete/manager-ui" target="_blank" class="github-link">
+                      <el-icon><Link /></el-icon>
+                      <div class="link-content">
+                        <div class="link-title">Manager UI 开源地址</div>
+                      </div>
+                    </a>
+                  </el-dropdown-item>
+                </el-dropdown-menu>
+              </template>
+            </el-dropdown>
+          </div>
         </div>
       </div>
     </el-header>
@@ -81,6 +119,7 @@
 </template>
 
 <script setup lang="ts">
+import { Link, ArrowDown, Monitor, Document } from '@element-plus/icons-vue'
 import type { ConnectionConfig } from '../composables/useApi'
 
 // 设置页面元信息
@@ -335,6 +374,129 @@ const props = withDefaults(defineProps<Props>(), {
   
   .logo-subtitle {
     margin-top: 0;
+  }
+}
+
+/* GitHub Links Styles */
+.github-links {
+  margin-left: var(--sc-space-md);
+}
+
+.github-button {
+  display: flex;
+  align-items: center;
+  gap: var(--sc-space-xs);
+  padding: var(--sc-space-sm) var(--sc-space-md);
+  background: var(--sc-bg-primary);
+  border: 1px solid var(--sc-border);
+  border-radius: var(--sc-radius-sm);
+  cursor: pointer;
+  transition: all var(--sc-transition-fast);
+  color: var(--sc-text-secondary);
+  font-size: 14px;
+  font-weight: 500;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
+}
+
+.github-button:hover {
+  background: var(--sc-bg-secondary);
+  border-color: var(--sc-primary-start);
+  color: var(--sc-primary-start);
+  transform: translateY(-1px);
+  box-shadow: 0 4px 8px rgba(217, 119, 6, 0.1);
+}
+
+.github-icon {
+  font-size: 16px;
+}
+
+.github-text {
+  font-weight: 500;
+}
+
+.dropdown-arrow {
+  font-size: 12px;
+  transition: transform var(--sc-transition-fast);
+}
+
+.github-button:hover .dropdown-arrow {
+  transform: rotate(180deg);
+}
+
+.github-link {
+  display: flex;
+  align-items: center;
+  gap: var(--sc-space-sm);
+  padding: var(--sc-space-sm) 0;
+  text-decoration: none;
+  color: var(--sc-text-primary);
+  transition: all var(--sc-transition-fast);
+  width: 100%;
+}
+
+.github-link:hover {
+  color: var(--sc-primary-start);
+  background: var(--sc-bg-secondary);
+  margin: 0 -12px;
+  padding: var(--sc-space-sm) 12px;
+  border-radius: var(--sc-radius-sm);
+}
+
+.github-link .el-icon {
+  font-size: 18px;
+  color: var(--sc-text-tertiary);
+  transition: color var(--sc-transition-fast);
+}
+
+.github-link:hover .el-icon {
+  color: var(--sc-primary-start);
+}
+
+.link-content {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+}
+
+.link-title {
+  font-weight: 600;
+  font-size: 14px;
+  line-height: 1.2;
+  color: inherit;
+}
+
+.link-url {
+  font-size: 12px;
+  color: var(--sc-text-tertiary);
+  font-family: 'SF Mono', 'Monaco', 'Inconsolata', 'Roboto Mono', monospace;
+  margin-top: 2px;
+  transition: color var(--sc-transition-fast);
+}
+
+.github-link:hover .link-url {
+  color: var(--sc-primary-start);
+}
+
+/* GitHub 链接响应式优化 */
+@media (max-width: 768px) {
+  .github-links {
+    margin-left: var(--sc-space-sm);
+  }
+  
+  .github-text {
+    display: none;
+  }
+  
+  .github-button {
+    padding: var(--sc-space-sm);
+    min-width: 40px;
+    justify-content: center;
+  }
+}
+
+@media (max-width: 600px) {
+  .github-links {
+    display: none;
   }
 }
 </style> 
