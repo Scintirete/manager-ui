@@ -4,10 +4,36 @@ import { fileURLToPath } from "node:url";
 export default defineNuxtConfig({
   compatibilityDate: '2025-07-15',
   devtools: { enabled: true },
+  css: [
+    '~/assets/scintirete.scss'
+  ],
   modules: [ '@element-plus/nuxt' ],
   elementPlus: {
     themes: ['dark'],
-    installMethods: ['ElLoading', 'ElMessage', 'ElMessageBox', 'ElNotification']
+    installMethods: ['ElLoading', 'ElMessage', 'ElMessageBox', 'ElNotification'],
+    importStyle: 'scss',
+    themeChalk: {
+      $colors: {
+        'primary': {
+          'base': "#D97706",
+        },
+        'success': {
+          'base': "#059669",
+        },
+        'warning': {
+          'base': "#D97706",
+        },
+        'danger': {
+          'base': "#DC2626",
+        },
+        'error': {
+          'base': "#DC2626",
+        },
+        'info': {
+          'base': "#2563EB",
+        },
+      },
+    }
   },
   typescript: {
     typeCheck: false, // 禁用类型检查以避免 CI 中的问题

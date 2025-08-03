@@ -293,25 +293,26 @@ const deleteConnection = async (connectionId: string | undefined) => {
 .connections-grid {
   display: grid;
   grid-template-columns: 1fr 300px;
-  gap: 24px;
-  max-width: 1600px;
+  gap: var(--sc-space-lg);
+  max-width: 1280px;
   margin: 0 auto;
 }
 
 .connections-container {
   display: grid;
   grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
-  gap: 20px;
+  gap: var(--sc-space-md);
 }
 
 .page-loading {
   grid-column: 1 / -1;
-  padding: 40px 20px;
+  padding: var(--sc-space-2xl) var(--sc-space-lg);
 }
 
 .connection-card {
   cursor: pointer;
-  transition: transform 0.2s ease;
+  transition: all var(--sc-transition-fast);
+  border-radius: var(--sc-radius-lg);
 }
 
 .connection-card:hover {
@@ -320,35 +321,44 @@ const deleteConnection = async (connectionId: string | undefined) => {
 
 .connection-item {
   height: 100%;
-  border-radius: 12px;
-  border: 1px solid #e4e7ed;
+  border-radius: var(--sc-radius-lg);
+  border: 1px solid var(--sc-border);
   overflow: hidden;
+  background: var(--sc-bg-primary);
+  box-shadow: var(--sc-shadow-sm);
+  transition: all var(--sc-transition-normal);
+}
+
+.connection-item:hover {
+  box-shadow: var(--sc-shadow-md);
+  border-color: var(--sc-primary-start);
 }
 
 .connection-content {
-  padding: 20px;
+  padding: var(--sc-space-lg);
 }
 
 .connection-header {
   display: flex;
   justify-content: space-between;
   align-items: flex-start;
-  margin-bottom: 16px;
+  margin-bottom: var(--sc-space-md);
 }
 
 .connection-title h3 {
-  margin: 0 0 8px 0;
+  margin: 0 0 var(--sc-space-sm) 0;
   font-size: 18px;
   font-weight: 600;
-  color: #303133;
+  color: var(--sc-text-primary);
   word-break: break-all;
+  line-height: 1.3;
 }
 
 .connection-actions {
   display: flex;
-  gap: 8px;
+  gap: var(--sc-space-sm);
   opacity: 0.7;
-  transition: opacity 0.2s ease;
+  transition: opacity var(--sc-transition-fast);
 }
 
 .connection-card:hover .connection-actions {
@@ -356,20 +366,24 @@ const deleteConnection = async (connectionId: string | undefined) => {
 }
 
 .danger-button {
-  color: #f56c6c !important;
+  color: var(--sc-error) !important;
 }
 
 .connection-details {
-  margin-bottom: 20px;
+  margin-bottom: var(--sc-space-lg);
 }
 
 .detail-item {
   display: flex;
   align-items: center;
-  gap: 8px;
-  margin-bottom: 8px;
-  color: #606266;
+  gap: var(--sc-space-sm);
+  margin-bottom: var(--sc-space-sm);
+  color: var(--sc-text-secondary);
   font-size: 14px;
+}
+
+.detail-item .el-icon {
+  color: var(--sc-text-tertiary);
 }
 
 .connection-footer {
@@ -386,21 +400,23 @@ const deleteConnection = async (connectionId: string | undefined) => {
 
 .quick-start-panel {
   position: sticky;
-  top: 24px;
+  top: var(--sc-space-lg);
   height: fit-content;
 }
 
 .quick-start-card {
-  border-radius: 12px;
-  border: 1px solid #e4e7ed;
+  border-radius: var(--sc-radius-lg);
+  border: 1px solid var(--sc-border);
+  background: var(--sc-bg-primary);
+  box-shadow: var(--sc-shadow-sm);
 }
 
 .quick-start-header {
   display: flex;
   align-items: center;
-  gap: 8px;
+  gap: var(--sc-space-sm);
   font-weight: 600;
-  color: #409eff;
+  color: var(--sc-primary-start);
 }
 
 .quick-start-content {
@@ -409,9 +425,9 @@ const deleteConnection = async (connectionId: string | undefined) => {
 
 .step-item {
   display: flex;
-  gap: 16px;
-  padding: 16px 0;
-  border-bottom: 1px solid #f0f2f5;
+  gap: var(--sc-space-lg);
+  padding: var(--sc-space-lg) 0;
+  border-bottom: 1px solid var(--sc-border-light);
 }
 
 .step-item:last-child {
@@ -422,7 +438,7 @@ const deleteConnection = async (connectionId: string | undefined) => {
   width: 32px;
   height: 32px;
   border-radius: 50%;
-  background-color: #409eff;
+  background: var(--sc-gradient-primary);
   color: white;
   display: flex;
   align-items: center;
@@ -433,29 +449,29 @@ const deleteConnection = async (connectionId: string | undefined) => {
 }
 
 .step-content h4 {
-  margin: 0 0 4px 0;
+  margin: 0 0 var(--sc-space-xs) 0;
   font-size: 16px;
   font-weight: 600;
-  color: #303133;
+  color: var(--sc-text-primary);
 }
 
 .step-content p {
   margin: 0;
-  color: #606266;
+  color: var(--sc-text-secondary);
   font-size: 14px;
   line-height: 1.4;
 }
 
 .quick-start-actions {
-  padding-top: 16px;
-  border-top: 1px solid #f0f2f5;
+  padding-top: var(--sc-space-lg);
+  border-top: 1px solid var(--sc-border-light);
 }
 
 /* 响应式设计 */
 @media (max-width: 1200px) {
   .connections-grid {
     grid-template-columns: 1fr;
-    gap: 20px;
+    gap: var(--sc-space-lg);
   }
   
   .quick-start-panel {
@@ -474,11 +490,25 @@ const deleteConnection = async (connectionId: string | undefined) => {
   
   .connection-header {
     flex-direction: column;
-    gap: 12px;
+    gap: var(--sc-space-md);
   }
   
   .connection-actions {
     align-self: flex-end;
+  }
+  
+  .connections-grid {
+    gap: var(--sc-space-md);
+  }
+}
+
+@media (max-width: 480px) {
+  .connection-content {
+    padding: var(--sc-space-md);
+  }
+  
+  .step-item {
+    gap: var(--sc-space-md);
   }
 }
 </style> 

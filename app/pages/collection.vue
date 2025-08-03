@@ -52,7 +52,7 @@
         
         <!-- 集合表格 -->
         <el-table v-else :data="collections" stripe>
-          <el-table-column prop="name" label="集合名称" min-width="150" />
+          <el-table-column prop="name" label="集合名称" min-width="100" />
           <el-table-column prop="dimension" label="维度" width="80" />
           <el-table-column prop="vector_count" label="向量数量" width="100">
             <template #default="{ row }">
@@ -74,7 +74,7 @@
               <el-tag size="small">{{ getMetricTypeName(row.metric_type) }}</el-tag>
             </template>
           </el-table-column>
-          <el-table-column label="操作" width="360">
+          <el-table-column label="操作" width="450">
             <template #default="{ row }">
               <el-button 
                 type="primary" 
@@ -92,7 +92,7 @@
               </el-button>
               <el-button 
                 v-if="config.public.enableVectorDelete"
-                type="warning" 
+                type="danger" 
                 size="small"
                 @click="showVectorDialog('delete', row)"
               >

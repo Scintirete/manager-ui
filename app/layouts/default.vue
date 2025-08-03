@@ -4,8 +4,14 @@
     <el-header class="layout-header">
       <div class="header-content">
         <div class="logo-section">
-          <NuxtLink to="/" style="text-decoration: none;">
-            <h1 class="logo">Scintirete Manager</h1>
+          <NuxtLink to="/" style="text-decoration: none;" class="logo-link">
+            <div class="logo-container">
+              <img src="/logo.png" alt="Scintirete Logo" class="logo-image" />
+              <div class="logo-text">
+                <h1 class="logo">Scintirete</h1>
+                <span class="logo-subtitle">Manager</span>
+              </div>
+            </div>
           </NuxtLink>
           <ConnectionStatus 
             :connection="currentConnection" 
@@ -101,15 +107,17 @@ const props = withDefaults(defineProps<Props>(), {
 <style scoped>
 .layout-container {
   min-height: 100vh;
-  background-color: #f5f7fa;
+  background: var(--sc-gradient-bg);
 }
 
 .layout-header {
-  background-color: #ffffff;
-  border-bottom: 1px solid #e4e7ed;
+  background: var(--sc-bg-primary);
+  border-bottom: 1px solid var(--sc-border);
   padding: 0;
-  height: 64px;
-  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+  height: var(--sc-header-height);
+  box-shadow: var(--sc-shadow-sm);
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
 }
 
 .header-content {
@@ -117,35 +125,81 @@ const props = withDefaults(defineProps<Props>(), {
   justify-content: space-between;
   align-items: center;
   height: 100%;
-  padding: 0 24px;
-  max-width: 1600px;
+  padding: 0 var(--sc-space-lg);
+  max-width: 1280px;
   margin: 0 auto;
 }
 
 .logo-section {
   display: flex;
   align-items: center;
-  gap: 16px;
+  gap: var(--sc-space-lg);
+}
+
+.logo-link {
+  display: flex;
+  align-items: center;
+  text-decoration: none;
+  transition: opacity var(--sc-transition-fast);
+}
+
+.logo-link:hover {
+  opacity: 0.8;
+}
+
+.logo-container {
+  display: flex;
+  align-items: center;
+  gap: var(--sc-space-sm);
+}
+
+.logo-image {
+  width: 40px;
+  height: 40px;
+  object-fit: contain;
+  border-radius: var(--sc-radius-sm);
+}
+
+.logo-text {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
 }
 
 .logo {
   margin: 0;
-  font-size: 20px;
-  font-weight: 600;
-  color: #409eff;
+  font-size: 24px;
+  font-weight: 700;
+  background: var(--sc-gradient-logo);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+  line-height: 1.1;
+  filter: drop-shadow(0 2px 4px rgba(217, 119, 6, 0.2));
+  transition: all var(--sc-transition-normal);
 }
 
+.logo:hover {
+  filter: drop-shadow(0 4px 8px rgba(217, 119, 6, 0.3));
+  transform: scale(1.02);
+}
 
+.logo-subtitle {
+  font-size: 14px;
+  font-weight: 500;
+  color: var(--sc-text-secondary);
+  margin-top: 2px;
+}
 
 .header-actions {
   display: flex;
   align-items: center;
-  gap: 12px;
+  gap: var(--sc-space-md);
 }
 
 .layout-aside {
-  background-color: #ffffff;
-  border-right: 1px solid #e4e7ed;
+  background: var(--sc-bg-primary);
+  border-right: 1px solid var(--sc-border);
   overflow: hidden;
 }
 
@@ -161,43 +215,47 @@ const props = withDefaults(defineProps<Props>(), {
 
 .layout-main {
   padding: 0;
-  background-color: #f5f7fa;
+  background: transparent;
   overflow-x: auto;
 }
 
 .breadcrumb-container {
-  background-color: #ffffff;
-  padding: 12px 24px;
-  border-bottom: 1px solid #e4e7ed;
+  background: var(--sc-bg-primary);
+  padding: var(--sc-space-md) var(--sc-space-lg);
+  border-bottom: 1px solid var(--sc-border);
   margin-bottom: 0;
 }
 
 .page-header {
-  background-color: #ffffff;
-  padding: 20px 24px;
-  margin-bottom: 24px;
-  border-bottom: 1px solid #e4e7ed;
+  background: var(--sc-bg-primary);
+  padding: var(--sc-space-lg);
+  margin-bottom: var(--sc-space-lg);
+  border-bottom: 1px solid var(--sc-border);
   display: flex;
   justify-content: space-between;
   align-items: center;
+  border-radius: var(--sc-radius-lg);
+  margin: var(--sc-space-lg);
+  margin-bottom: var(--sc-space-lg);
+  box-shadow: var(--sc-shadow-sm);
 }
 
 .page-title {
   margin: 0;
   font-size: 24px;
   font-weight: 600;
-  color: #303133;
+  color: var(--sc-text-primary);
 }
 
 .page-actions {
   display: flex;
-  gap: 12px;
+  gap: var(--sc-space-md);
   align-items: center;
 }
 
 .page-content {
-  /* padding: 0 24px 24px; */
-  /* max-width: 1600px; */
+  padding: 0 var(--sc-space-lg) var(--sc-space-lg);
+  max-width: 1280px;
   margin: 0 auto;
   width: 100%;
 }
@@ -215,11 +273,20 @@ const props = withDefaults(defineProps<Props>(), {
 
 @media (max-width: 768px) {
   .header-content {
-    padding: 0 16px;
+    padding: 0 var(--sc-space-md);
   }
   
   .logo {
-    font-size: 18px;
+    font-size: 20px;
+  }
+  
+  .logo-subtitle {
+    font-size: 12px;
+  }
+  
+  .logo-image {
+    width: 32px;
+    height: 32px;
   }
   
   .connection-info {
@@ -231,18 +298,18 @@ const props = withDefaults(defineProps<Props>(), {
   }
   
   .page-header {
-    padding: 16px;
+    padding: var(--sc-space-md);
     flex-direction: column;
     align-items: flex-start;
-    gap: 12px;
+    gap: var(--sc-space-md);
   }
   
   .page-content {
-    padding: 0 16px 16px;
+    padding: 0 var(--sc-space-md) var(--sc-space-md);
   }
   
   .breadcrumb-container {
-    padding: 8px 16px;
+    padding: var(--sc-space-sm) var(--sc-space-md);
   }
 }
 
@@ -253,6 +320,21 @@ const props = withDefaults(defineProps<Props>(), {
   
   .sidebar-menu .el-menu-item span {
     display: none;
+  }
+  
+  .logo-container {
+    flex-direction: column;
+    gap: 4px;
+  }
+  
+  .logo-text {
+    flex-direction: row;
+    align-items: center;
+    gap: 4px;
+  }
+  
+  .logo-subtitle {
+    margin-top: 0;
   }
 }
 </style> 

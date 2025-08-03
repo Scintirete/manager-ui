@@ -76,43 +76,51 @@ defineEmits<Emits>()
 }
 
 .page-card {
-  border: 1px solid #e4e7ed;
-  border-radius: 8px;
+  border: 1px solid var(--sc-border);
+  border-radius: var(--sc-radius-lg);
   overflow: hidden;
+  background: var(--sc-bg-primary);
+  box-shadow: var(--sc-shadow-sm);
+  transition: all var(--sc-transition-normal);
+}
+
+.page-card:hover {
+  box-shadow: var(--sc-shadow-md);
 }
 
 .card-header {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  margin: -20px -20px 0 -20px;
-  padding: 16px 20px;
-  background-color: #fafafa;
-  border-bottom: 1px solid #e4e7ed;
+  margin: calc(-1 * var(--sc-space-lg)) calc(-1 * var(--sc-space-lg)) 0 calc(-1 * var(--sc-space-lg));
+  padding: var(--sc-space-md) var(--sc-space-lg);
+  background: var(--sc-bg-secondary);
+  border-bottom: 1px solid var(--sc-border);
 }
 
 .card-title {
   font-size: 16px;
   font-weight: 600;
-  color: #303133;
+  color: var(--sc-text-primary);
 }
 
 .card-actions {
   display: flex;
-  gap: 8px;
+  gap: var(--sc-space-sm);
   align-items: center;
 }
 
 .card-content {
   min-height: 200px;
+  padding: var(--sc-space-lg);
 }
 
 .loading-container {
-  padding: 20px 0;
+  padding: var(--sc-space-lg) 0;
 }
 
 .empty-container {
-  padding: 40px 0;
+  padding: var(--sc-space-2xl) 0;
   text-align: center;
 }
 
@@ -122,11 +130,11 @@ defineEmits<Emits>()
 
 /* 对于表格等组件的特殊处理 */
 .card-content :deep(.el-table) {
-  margin: -20px -20px 0 -20px;
+  margin: calc(-1 * var(--sc-space-lg)) calc(-1 * var(--sc-space-lg)) 0 calc(-1 * var(--sc-space-lg));
 }
 
 .card-content :deep(.el-table__header-wrapper) {
-  background-color: #fafbfc;
+  background-color: var(--sc-bg-secondary);
 }
 
 /* 响应式设计 */
@@ -134,13 +142,17 @@ defineEmits<Emits>()
   .card-header {
     flex-direction: column;
     align-items: flex-start;
-    gap: 12px;
-    padding: 12px 16px;
+    gap: var(--sc-space-md);
+    padding: var(--sc-space-md) var(--sc-space-lg);
   }
   
   .card-actions {
     width: 100%;
     justify-content: flex-end;
+  }
+  
+  .card-content {
+    padding: var(--sc-space-md);
   }
 }
 </style> 
