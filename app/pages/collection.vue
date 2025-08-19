@@ -166,7 +166,7 @@
 
 <script setup lang="ts">
 import { ArrowLeft, Refresh } from '@element-plus/icons-vue'
-import type { CollectionInfo, EmbeddingModel, SearchResultItem, DistanceMetric, HnswConfig } from '~/types/scintirete'
+import type { CollectionInfo, EmbeddingModel, SearchResultItem, DistanceMetric, HnswConfig } from '~/types/scintirete.d.ts'
 
 // 获取路由参数
 const route = useRoute()
@@ -183,6 +183,8 @@ const {
   listEmbeddingModels,
   embedAndInsert,
   embedAndSearch,
+  insertVectors,
+  searchVectors,
   deleteVectors
 } = useApi()
 const { getConnection } = useConnections()
@@ -191,6 +193,57 @@ const { getConnection } = useConnections()
 const loading = ref(false)
 const modelsLoading = ref(false)
 const operationLoading = ref(false)
+
+// 解析向量数组的辅助函数
+const parseVectorArray = (input: string): number[][] => {
+  const trimmed = input.trim()
+  if (!trimmed) {
+    throw new Error('向量数组不能为空')
+  }
+
+  try {
+    // 如果是单个向量数组格式：[1, 2, 3]
+    if (trimmed.startsWith('[') && trimmed.endsWith(']') && !trimmed.includes('],[')) {
+      const parsed = JSON.parse(trimmed)
+      if (Array.isArray(parsed) && parsed.every(n => typeof n === 'number')) {
+        return [parsed]
+      }
+    }
+    
+    // 如果是多个向量数组格式：[[1,2],[3,4]] 或者 每行一个向量
+    if (trimmed.includes('\n')) {
+      // 每行一个向量的格式
+      const lines = trimmed.split('\n').filter(line => line.trim())
+      return lines.map(line => {
+        const parsed = JSON.parse(line.trim())
+        if (!Array.isArray(parsed) || !parsed.every(n => typeof n === 'number')) {
+          throw new Error('向量必须是数字数组')
+        }
+        return parsed
+      })
+    } else {
+      // JSON数组格式：[[1,2],[3,4]]
+      const parsed = JSON.parse(trimmed)
+      if (Array.isArray(parsed)) {
+        // 检查是否为二维数组
+        if (parsed.every(arr => Array.isArray(arr) && arr.every(n => typeof n === 'number'))) {
+          return parsed
+        }
+        // 检查是否为一维数组
+        if (parsed.every(n => typeof n === 'number')) {
+          return [parsed]
+        }
+      }
+    }
+    
+    throw new Error('不支持的向量格式')
+  } catch (error: any) {
+    if (error.message.includes('不支持的向量格式') || error.message.includes('向量必须是数字数组')) {
+      throw error
+    }
+    throw new Error('JSON格式错误，请检查语法')
+  }
+}
 
 const collections = ref<CollectionInfo[]>([])
 const embeddingModels = ref<EmbeddingModel[]>([])
@@ -377,11 +430,6 @@ const handleVectorOperation = async (formData: any) => {
 
 // 处理插入向量
 const handleInsert = async (formData: any) => {
-  if (!formData.text.trim()) {
-    ElMessage.warning('请填写文本内容')
-    return
-  }
-
   let metadata = {}
   if (formData.metadata.trim()) {
     try {
@@ -392,12 +440,43 @@ const handleInsert = async (formData: any) => {
     }
   }
 
-  const response = await embedAndInsert(
-    currentDatabase.value,
-    currentCollection.value!.name,
-    [{ text: formData.text, metadata }],
-    formData.model || undefined
-  )
+  let response
+  
+  if (formData.insertType === 'array') {
+    // 数组插入模式
+    if (!formData.vectorArray.trim()) {
+      ElMessage.warning('请填写向量数组')
+      return
+    }
+
+    try {
+      // 解析向量数组
+      const vectorData = parseVectorArray(formData.vectorArray)
+      const vectors = vectorData.map(elements => ({ elements, metadata }))
+      
+      response = await insertVectors(
+        currentDatabase.value,
+        currentCollection.value!.name,
+        vectors
+      )
+    } catch (error: any) {
+      ElMessage.error(`向量数组格式错误：${error.message}`)
+      return
+    }
+  } else {
+    // 嵌入插入模式
+    if (!formData.text.trim()) {
+      ElMessage.warning('请填写文本内容')
+      return
+    }
+
+    response = await embedAndInsert(
+      currentDatabase.value,
+      currentCollection.value!.name,
+      [{ text: formData.text, metadata }],
+      formData.model || undefined
+    )
+  }
 
   // 设置插入结果并显示弹窗
   insertResult.value = {
@@ -412,19 +491,49 @@ const handleInsert = async (formData: any) => {
 
 // 处理搜索向量
 const handleSearch = async (formData: any) => {
-  if (!formData.queryText.trim()) {
-    ElMessage.warning('请填写查询文本')
-    return
-  }
+  let response
+  
+  if (formData.searchType === 'vector') {
+    // 向量搜索模式
+    if (!formData.queryVector.trim()) {
+      ElMessage.warning('请填写查询向量')
+      return
+    }
 
-  const response = await embedAndSearch(
-    currentDatabase.value,
-    currentCollection.value!.name,
-    formData.queryText,
-    formData.topK,
-    formData.model || undefined,
-    formData.filter || undefined
-  )
+    try {
+      // 解析查询向量
+      const queryVector = parseVectorArray(formData.queryVector)[0]
+      if (!queryVector || queryVector.length === 0) {
+        throw new Error('查询向量不能为空')
+      }
+      
+      response = await searchVectors(
+        currentDatabase.value,
+        currentCollection.value!.name,
+        queryVector,
+        formData.topK,
+        formData.filter || undefined
+      )
+    } catch (error: any) {
+      ElMessage.error(`查询向量格式错误：${error.message}`)
+      return
+    }
+  } else {
+    // 文本搜索模式
+    if (!formData.queryText.trim()) {
+      ElMessage.warning('请填写查询文本')
+      return
+    }
+
+    response = await embedAndSearch(
+      currentDatabase.value,
+      currentCollection.value!.name,
+      formData.queryText,
+      formData.topK,
+      formData.model || undefined,
+      formData.filter || undefined
+    )
+  }
 
   searchResults.value = response.results || []
   ElMessage.success(`找到 ${searchResults.value.length} 个结果`)

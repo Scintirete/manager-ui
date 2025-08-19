@@ -11,9 +11,34 @@
       :rules="rules"
       label-width="120px"
     >
-      <!-- 嵌入模型选择 (插入和搜索操作需要) -->
+      <!-- 插入类型选择 (插入操作) -->
       <el-form-item 
-        v-if="['insert', 'search'].includes(operation)"
+        v-if="operation === 'insert'"
+        label="插入类型" 
+        prop="insertType"
+      >
+        <el-radio-group v-model="form.insertType">
+          <el-radio value="array">数组插入</el-radio>
+          <el-radio value="embedding">嵌入插入</el-radio>
+        </el-radio-group>
+        <p class="help-text">数组插入：直接插入向量数组；嵌入插入：通过文本生成向量</p>
+      </el-form-item>
+
+      <!-- 搜索类型选择 (搜索操作) -->
+      <el-form-item 
+        v-if="operation === 'search'"
+        label="搜索类型" 
+        prop="searchType"
+      >
+        <el-radio-group v-model="form.searchType">
+          <el-radio value="text">文本搜索</el-radio>
+          <el-radio value="vector">向量搜索</el-radio>
+        </el-radio-group>
+      </el-form-item>
+
+      <!-- 嵌入模型选择 (嵌入插入和文本搜索需要) -->
+      <el-form-item 
+        v-if="(operation === 'insert' && form.insertType === 'embedding') || (operation === 'search' && form.searchType === 'text')"
         label="嵌入模型" 
         prop="model"
       >
@@ -34,9 +59,24 @@
         <p class="help-text">注意：插入和搜索需要用同一个模型</p>
       </el-form-item>
 
-      <!-- 文本内容 (插入操作) -->
+      <!-- 向量数组 (数组插入) -->
       <el-form-item 
-        v-if="operation === 'insert'"
+        v-if="operation === 'insert' && form.insertType === 'array'"
+        label="向量数组" 
+        prop="vectorArray"
+      >
+        <el-input 
+          v-model="form.vectorArray"
+          type="textarea" 
+          :rows="6"
+          placeholder="输入向量数组，格式：[0.1, 0.2, 0.3, ...]&#10;支持多个向量，每行一个向量"
+        />
+        <p class="help-text">格式：每行一个向量数组，如 [0.1, 0.2, 0.3] 或 [[0.1, 0.2], [0.3, 0.4]]</p>
+      </el-form-item>
+
+      <!-- 文本内容 (嵌入插入) -->
+      <el-form-item 
+        v-if="operation === 'insert' && form.insertType === 'embedding'"
         label="文本内容" 
         prop="text"
       >
@@ -62,9 +102,9 @@
         />
       </el-form-item>
 
-      <!-- 查询文本 (搜索操作) -->
+      <!-- 查询文本 (文本搜索) -->
       <el-form-item 
-        v-if="operation === 'search'"
+        v-if="operation === 'search' && form.searchType === 'text'"
         label="查询文本" 
         prop="queryText"
       >
@@ -74,6 +114,21 @@
           :rows="3"
           placeholder="输入查询文本"
         />
+      </el-form-item>
+
+      <!-- 查询向量 (向量搜索) -->
+      <el-form-item 
+        v-if="operation === 'search' && form.searchType === 'vector'"
+        label="查询向量" 
+        prop="queryVector"
+      >
+        <el-input 
+          v-model="form.queryVector"
+          type="textarea" 
+          :rows="4"
+          placeholder="输入查询向量，格式：[0.1, 0.2, 0.3, ...]"
+        />
+        <p class="help-text">格式：[0.1, 0.2, 0.3] 单个向量数组</p>
       </el-form-item>
 
       <!-- 返回数量 (搜索操作) -->
@@ -114,6 +169,11 @@
           placeholder="输入要删除的向量ID，用逗号分隔，例如: 1,2,3"
         />
       </el-form-item>
+
+      <!-- 搜索类型说明 (搜索操作) -->
+      <div v-if="operation === 'search'" class="search-type-explanation">
+        <p class="help-text">文本搜索：通过文本生成向量搜索；向量搜索：直接使用向量搜索</p>
+      </div>
     </el-form>
 
     <!-- 搜索结果展示 -->
@@ -152,7 +212,7 @@
 
 <script setup lang="ts">
 import type { FormInstance, FormRules } from 'element-plus'
-import type { EmbeddingModel, SearchResultItem } from '~/types/scintirete'
+import type { EmbeddingModel, SearchResultItem } from '~~/types/scintirete'
 
 interface Props {
   visible: boolean
@@ -165,9 +225,13 @@ interface Props {
 
 interface FormData {
   model: string
+  insertType: 'array' | 'embedding'
   text: string
+  vectorArray: string
   metadata: string
   queryText: string
+  queryVector: string
+  searchType: 'text' | 'vector'
   topK: number
   filter: string
   ids: string
@@ -213,9 +277,13 @@ const width = computed(() => {
 // 表单数据
 const form = ref<FormData>({
   model: '',
+  insertType: 'array',
   text: '',
+  vectorArray: '',
   metadata: '',
   queryText: '',
+  queryVector: '',
+  searchType: 'vector',
   topK: 10,
   filter: '',
   ids: ''
@@ -225,28 +293,52 @@ const form = ref<FormData>({
 const rules = computed((): FormRules => {
   const baseRules: FormRules = {}
   
-  if (['insert', 'search'].includes(props.operation)) {
-    baseRules.model = [
-      { required: true, message: '请选择嵌入模型', trigger: 'change' }
-    ]
-  }
-  
+  // 插入操作验证
   if (props.operation === 'insert') {
-    baseRules.text = [
-      { required: true, message: '请输入文本内容', trigger: 'blur' }
+    baseRules.insertType = [
+      { required: true, message: '请选择插入类型', trigger: 'change' }
     ]
+    
+    if (form.value.insertType === 'embedding') {
+      baseRules.model = [
+        { required: true, message: '请选择嵌入模型', trigger: 'change' }
+      ]
+      baseRules.text = [
+        { required: true, message: '请输入文本内容', trigger: 'blur' }
+      ]
+    } else if (form.value.insertType === 'array') {
+      baseRules.vectorArray = [
+        { required: true, message: '请输入向量数组', trigger: 'blur' }
+      ]
+    }
   }
   
+  // 搜索操作验证
   if (props.operation === 'search') {
-    baseRules.queryText = [
-      { required: true, message: '请输入查询文本', trigger: 'blur' }
+    baseRules.searchType = [
+      { required: true, message: '请选择搜索类型', trigger: 'change' }
     ]
+    
+    if (form.value.searchType === 'text') {
+      baseRules.model = [
+        { required: true, message: '请选择嵌入模型', trigger: 'change' }
+      ]
+      baseRules.queryText = [
+        { required: true, message: '请输入查询文本', trigger: 'blur' }
+      ]
+    } else if (form.value.searchType === 'vector') {
+      baseRules.queryVector = [
+        { required: true, message: '请输入查询向量', trigger: 'blur' }
+      ]
+    }
+    
     baseRules.topK = [
       { required: true, message: '请输入返回数量', trigger: 'blur' },
       { type: 'number', min: 1, max: 100, message: '返回数量范围：1-100', trigger: 'blur' }
     ]
   }
   
+  // 删除操作验证
   if (props.operation === 'delete') {
     baseRules.ids = [
       { required: true, message: '请输入向量ID', trigger: 'blur' }
@@ -260,9 +352,13 @@ const rules = computed((): FormRules => {
 const resetForm = () => {
   form.value = {
     model: '',
+    insertType: 'array',
     text: '',
+    vectorArray: '',
     metadata: '',
     queryText: '',
+    queryVector: '',
+    searchType: 'vector',
     topK: 10,
     filter: '',
     ids: ''
@@ -340,5 +436,17 @@ code {
   color: #999;
   font-size: 12px;
   margin-top: 10px;
+}
+
+.search-type-explanation {
+  margin-top: 10px;
+  padding-top: 15px;
+  border-top: 1px solid #ebeef5;
+}
+
+.search-type-explanation .help-text {
+  margin-top: 0;
+  text-align: center;
+  font-style: italic;
 }
 </style> 

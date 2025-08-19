@@ -7,6 +7,12 @@ export default defineNuxtConfig({
   css: [
     '~/assets/scintirete.scss'
   ],
+  alias: {
+    '~': fileURLToPath(new URL('./', import.meta.url)),
+    '@': fileURLToPath(new URL('./', import.meta.url)),
+    'assets': fileURLToPath(new URL('./assets', import.meta.url)),
+    'types': fileURLToPath(new URL('./types', import.meta.url)),
+  },
   modules: [ '@element-plus/nuxt' ],
   elementPlus: {
     themes: ['dark'],
@@ -53,11 +59,5 @@ export default defineNuxtConfig({
       enableVectorDelete: true    // 向量删除操作开关
     }
   },
-  vite: {
-    resolve: {
-      alias: {
-        '~': fileURLToPath(new URL('./', import.meta.url))
-      }
-    }
-  }
+
 })

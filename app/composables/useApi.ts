@@ -18,11 +18,14 @@ import type {
   EmbedAndInsertResponse,
   EmbedAndSearchRequest,
   SearchResponse,
+  InsertVectorsRequest,
+  InsertVectorsResponse,
+  SearchRequest,
   DeleteVectorsRequest,
   DeleteVectorsResponse,
   DistanceMetric,
   HnswConfig
-} from '~/types/scintirete'
+} from '~/types/scintirete.d.ts'
 
 // 连接配置接口
 export interface ConnectionConfig {
@@ -383,6 +386,50 @@ export function useApi() {
     })
   }
 
+  // 直接插入向量数组（使用统一鉴权）
+  const insertVectors = async (
+    dbName: string,
+    collectionName: string,
+    vectors: { elements: number[]; metadata: Record<string, any> }[]
+  ): Promise<InsertVectorsResponse> => {
+    const request: InsertVectorsRequest = {
+      auth: {
+        password: currentConnection.value?.password || ''
+      },
+      db_name: dbName,
+      collection_name: collectionName,
+      vectors: vectors.map(v => ({ elements: v.elements, metadata: v.metadata }))
+    }
+    return await apiRequest<InsertVectorsResponse>(`/databases/${dbName}/collections/${collectionName}/vectors`, {
+      method: 'POST',
+      data: request
+    })
+  }
+
+  // 直接向量搜索（使用统一鉴权）
+  const searchVectors = async (
+    dbName: string,
+    collectionName: string,
+    queryVector: number[],
+    topK: number,
+    filter?: string
+  ): Promise<SearchResponse> => {
+    const request: SearchRequest = {
+      auth: {
+        password: currentConnection.value?.password || ''
+      },
+      db_name: dbName,
+      collection_name: collectionName,
+      query_vector: queryVector,
+      top_k: topK,
+      filter: filter || ''
+    }
+    return await apiRequest<SearchResponse>(`/databases/${dbName}/collections/${collectionName}/search`, {
+      method: 'POST',
+      data: request
+    })
+  }
+
   // 删除向量（使用统一鉴权）
   const deleteVectors = async (
     dbName: string,
@@ -417,6 +464,8 @@ export function useApi() {
     listEmbeddingModels,
     embedAndInsert,
     embedAndSearch,
+    insertVectors,
+    searchVectors,
     deleteVectors
   }
 } 
