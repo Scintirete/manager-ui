@@ -14,37 +14,37 @@
       <!-- 插入类型选择 (插入操作) -->
       <el-form-item 
         v-if="operation === 'insert'"
-        label="插入类型" 
+        :label="$t('vectorModal.insertType')" 
         prop="insertType"
       >
         <el-radio-group v-model="form.insertType">
-          <el-radio value="array">数组插入</el-radio>
-          <el-radio value="embedding">嵌入插入</el-radio>
+          <el-radio value="array">{{ $t('vectorModal.arrayInsert') }}</el-radio>
+          <el-radio value="embedding">{{ $t('vectorModal.embeddingInsert') }}</el-radio>
         </el-radio-group>
-        <p class="help-text">数组插入：直接插入向量数组；嵌入插入：通过文本生成向量</p>
+        <p class="help-text">{{ $t('vectorModal.arrayInsertDesc') }}</p>
       </el-form-item>
 
       <!-- 搜索类型选择 (搜索操作) -->
       <el-form-item 
         v-if="operation === 'search'"
-        label="搜索类型" 
+        :label="$t('vectorModal.searchType')" 
         prop="searchType"
       >
         <el-radio-group v-model="form.searchType">
-          <el-radio value="text">文本搜索</el-radio>
-          <el-radio value="vector">向量搜索</el-radio>
+          <el-radio value="text">{{ $t('vectorModal.textSearch') }}</el-radio>
+          <el-radio value="vector">{{ $t('vectorModal.vectorSearch') }}</el-radio>
         </el-radio-group>
       </el-form-item>
 
       <!-- 嵌入模型选择 (嵌入插入和文本搜索需要) -->
       <el-form-item 
         v-if="(operation === 'insert' && form.insertType === 'embedding') || (operation === 'search' && form.searchType === 'text')"
-        label="嵌入模型" 
+        :label="$t('vectorModal.embeddingModel')" 
         prop="model"
       >
         <el-select 
           v-model="form.model" 
-          placeholder="选择嵌入模型"
+:placeholder="$t('vectorModal.selectModel')"
           style="width: 100%"
           :loading="modelsLoading"
         >
@@ -56,22 +56,22 @@
             :disabled="!model.available"
           />
         </el-select>
-        <p class="help-text">注意：插入和搜索需要用同一个模型</p>
+        <p class="help-text">{{ $t('vectorModal.modelNote') }}</p>
       </el-form-item>
 
       <!-- 向量数组 (数组插入) -->
       <el-form-item 
         v-if="operation === 'insert' && form.insertType === 'array'"
-        label="向量数组" 
+        :label="$t('vectorModal.vectorArray')" 
         prop="vectorArray"
       >
         <el-input 
           v-model="form.vectorArray"
           type="textarea" 
           :rows="6"
-          placeholder="输入向量数组，格式：[0.1, 0.2, 0.3, ...]&#10;支持多个向量，每行一个向量"
+:placeholder="$t('vectorModal.vectorArrayPlaceholder')"
         />
-        <p class="help-text">格式：每行一个向量数组，如 [0.1, 0.2, 0.3] 或 [[0.1, 0.2], [0.3, 0.4]]</p>
+        <p class="help-text">{{ $t('vectorModal.vectorArrayFormat') }}</p>
       </el-form-item>
 
       <!-- 文本内容 (嵌入插入) -->
@@ -159,35 +159,35 @@
       <!-- 向量ID列表 (删除操作) -->
       <el-form-item 
         v-if="operation === 'delete'"
-        label="向量ID列表" 
+        :label="$t('vectorModal.vectorIds')" 
         prop="ids"
       >
         <el-input 
           v-model="form.ids"
           type="textarea" 
           :rows="4"
-          placeholder="输入要删除的向量ID，用逗号分隔，例如: 1,2,3"
+:placeholder="$t('vectorModal.vectorIdsPlaceholder')"
         />
       </el-form-item>
 
       <!-- 搜索类型说明 (搜索操作) -->
       <div v-if="operation === 'search'" class="search-type-explanation">
-        <p class="help-text">文本搜索：通过文本生成向量搜索；向量搜索：直接使用向量搜索</p>
+        <p class="help-text">{{ $t('vectorModal.searchTypeDesc') }}</p>
       </div>
     </el-form>
 
     <!-- 搜索结果展示 -->
     <div v-if="operation === 'search' && searchResults.length > 0" class="search-results">
-      <h4>搜索结果：</h4>
-      <p class="help-text">注：搜索结果最接近的在前面，内积值 INNER_PRODUCT 越小越接近，向量数据库中不存储原始信息，请通过 ID 或 metadata 对源数据做关联</p>
+      <h4>{{ $t('vectorModal.searchResults') }}</h4>
+      <p class="help-text">{{ $t('vectorModal.searchResultsNote') }}</p>
       <el-table :data="searchResults" size="small" max-height="300">
         <el-table-column prop="id" label="ID" width="80" />
-        <el-table-column prop="distance" label="距离" width="100">
+        <el-table-column prop="distance" :label="$t('vectorModal.distance')" width="100">
           <template #default="{ row }">
             {{ row.distance.toFixed(4) }}
           </template>
         </el-table-column>
-        <el-table-column prop="metadata" label="元数据">
+        <el-table-column prop="metadata" :label="$t('vector.metadata')">
           <template #default="{ row }">
             <code>{{ JSON.stringify(row.metadata) }}</code>
           </template>
@@ -197,7 +197,7 @@
     
     <template #footer>
       <el-button @click="handleClose">
-        {{ operation === 'search' ? '关闭' : '取消' }}
+        {{ operation === 'search' ? $t('vectorModal.close') : $t('vectorModal.cancel') }}
       </el-button>
       <el-button 
         :type="operation === 'delete' ? 'danger' : 'primary'"
@@ -251,6 +251,9 @@ const props = withDefaults(defineProps<Props>(), {
 
 const emit = defineEmits<Emits>()
 
+// 国际化
+const { t: $t } = useI18n()
+
 // 表单引用和状态
 const formRef = ref<FormInstance>()
 const submitting = ref(false)
@@ -263,9 +266,9 @@ const dialogVisible = computed({
 
 const title = computed(() => {
   const titles = {
-    insert: '插入向量',
-    search: '搜索向量', 
-    delete: '删除向量'
+    insert: $t('vector.insert'),
+    search: $t('vector.search'), 
+    delete: $t('vector.delete')
   }
   return titles[props.operation]
 })
@@ -393,9 +396,9 @@ const handleSubmit = async () => {
 // 获取提交按钮文本
 const getSubmitButtonText = () => {
   const texts = {
-    insert: '插入',
-    search: '搜索',
-    delete: '删除'
+    insert: $t('vectorModal.insertButton'),
+    search: $t('vectorModal.searchButton'),
+    delete: $t('vectorModal.deleteButton')
   }
   return texts[props.operation]
 }

@@ -1,7 +1,7 @@
 <template>
   <el-dialog 
     v-model="dialogVisible" 
-    title="插入结果"
+:title="$t('insertResult.title')"
     width="600px"
     @close="handleClose"
   >
@@ -10,15 +10,15 @@
         <el-icon class="success-icon" color="#67C23A" size="48">
           <CircleCheck />
         </el-icon>
-        <h3>插入成功!</h3>
+        <h3>{{ $t('insertResult.success') }}</h3>
       </div>
       
       <div class="result-details">
         <el-descriptions :column="2" border>
-          <el-descriptions-item label="插入数量">
+          <el-descriptions-item :label="$t('insertResult.insertedCount')">
             <el-tag type="success" size="large">{{ result?.inserted_count || 0 }}</el-tag>
           </el-descriptions-item>
-          <el-descriptions-item label="生成的向量ID">
+          <el-descriptions-item :label="$t('insertResult.generatedIds')">
             <div class="ids-container">
               <el-tag 
                 v-for="id in result?.inserted_ids" 
@@ -39,11 +39,11 @@
           type="textarea"
           :rows="3"
           readonly
-          placeholder="向量ID列表"
+:placeholder="$t('insertResult.idsPlaceholder')"
         >
           <template #append>
             <el-button @click="copyIds" :icon="DocumentCopy">
-              复制
+              {{ $t('insertResult.copy') }}
             </el-button>
           </template>
         </el-input>
@@ -52,7 +52,7 @@
     
     <template #footer>
       <el-button type="primary" @click="handleClose">
-        确定
+        {{ $t('insertResult.confirm') }}
       </el-button>
     </template>
   </el-dialog>
@@ -81,6 +81,9 @@ const props = withDefaults(defineProps<Props>(), {
 
 const emit = defineEmits<Emits>()
 
+// 国际化
+const { t: $t } = useI18n()
+
 // 计算属性
 const dialogVisible = computed({
   get: () => props.visible,
@@ -101,10 +104,10 @@ const handleClose = () => {
 const copyIds = async () => {
   try {
     await navigator.clipboard.writeText(idsText.value)
-    ElMessage.success('ID列表已复制到剪贴板')
+    ElMessage.success($t('insertResult.copySuccess'))
   } catch (error) {
     console.error('Failed to copy text:', error)
-    ElMessage.error('复制失败')
+    ElMessage.error($t('insertResult.copyFailed'))
   }
 }
 </script>

@@ -45,50 +45,50 @@
         
         <!-- 空状态 -->
         <div v-else-if="!collections.length" class="no-collections">
-          <el-empty description="没有找到集合">
-            <el-button type="primary" @click="showCreateCollectionDialog">创建集合</el-button>
+          <el-empty :description="$t('collection.noCollections')">
+            <el-button type="primary" @click="showCreateCollectionDialog">{{ $t('collection.createCollection') }}</el-button>
           </el-empty>
         </div>
         
         <!-- 集合表格 -->
         <el-table v-else :data="collections" stripe>
-          <el-table-column prop="name" label="集合名称" min-width="100" />
-          <el-table-column prop="dimension" label="维度" width="80" />
-          <el-table-column prop="vector_count" label="向量数量" width="100">
+          <el-table-column prop="name" :label="$t('collection.name')" min-width="100" />
+          <el-table-column prop="dimension" :label="$t('collection.dimension')" width="80" />
+          <el-table-column prop="vector_count" :label="$t('collection.vectorCount')" width="100">
             <template #default="{ row }">
               {{ row.vector_count.toLocaleString() }}
             </template>
           </el-table-column>
-          <el-table-column prop="deleted_count" label="已删除" width="80">
+          <el-table-column prop="deleted_count" :label="$t('collection.deletedCount')" width="80">
             <template #default="{ row }">
               {{ row.deleted_count.toLocaleString() }}
             </template>
           </el-table-column>
-          <el-table-column prop="memory_bytes" label="内存占用" width="100">
+          <el-table-column prop="memory_bytes" :label="$t('collection.memoryUsage')" width="100">
             <template #default="{ row }">
               {{ formatBytes(row.memory_bytes) }}
             </template>
           </el-table-column>
-          <el-table-column prop="metric_type" label="距离度量" width="120">
+          <el-table-column prop="metric_type" :label="$t('collection.metricType')" width="120">
             <template #default="{ row }">
               <el-tag size="small">{{ getMetricTypeName(row.metric_type) }}</el-tag>
             </template>
           </el-table-column>
-          <el-table-column label="操作" width="450">
+          <el-table-column :label="$t('collection.operations')" width="450">
             <template #default="{ row }">
               <el-button 
                 type="primary" 
                 size="small"
                 @click="showVectorDialog('insert', row)"
               >
-                插入向量
+                {{ $t('collection.insertVector') }}
               </el-button>
               <el-button 
                 type="success" 
                 size="small"
                 @click="showVectorDialog('search', row)"
               >
-                搜索向量
+                {{ $t('collection.searchVector') }}
               </el-button>
               <el-button 
                 v-if="config.public.enableVectorDelete"
@@ -96,11 +96,11 @@
                 size="small"
                 @click="showVectorDialog('delete', row)"
               >
-                删除向量
+                {{ $t('collection.deleteVector') }}
               </el-button>
               <el-tooltip 
                 v-else
-                content="向量删除操作已被管理员禁用"
+                :content="$t('collection.vectorDeleteDisabled')"
                 placement="top"
               >
                 <el-button 
@@ -108,7 +108,7 @@
                   size="small"
                   disabled
                 >
-                  删除向量
+                  {{ $t('collection.deleteVector') }}
                 </el-button>
               </el-tooltip>
               <el-button 
@@ -117,11 +117,11 @@
                 size="small"
                 @click="deleteCollection(row)"
               >
-                删除集合
+                {{ $t('collection.deleteCollection') }}
               </el-button>
               <el-tooltip 
                 v-else
-                content="集合删除操作已被管理员禁用"
+                :content="$t('collection.collectionDeleteDisabled')"
                 placement="top"
               >
                 <el-button 
@@ -129,7 +129,7 @@
                   size="small"
                   disabled
                 >
-                  删除集合
+                  {{ $t('collection.deleteCollection') }}
                 </el-button>
               </el-tooltip>
             </template>

@@ -151,7 +151,7 @@ import type { ConnectionConfig } from '../composables/useApi'
 
 // 设置页面元信息
 useHead({
-  title: 'Scintirete Manager UI - 集合管理'
+  title: 'Scintirete Manager UI'
 })
 
 interface Props {
