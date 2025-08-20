@@ -4,7 +4,7 @@
       <!-- 服务器信息 -->
       <div class="status-item">
         <el-icon class="status-icon" color="#409EFF"><Monitor /></el-icon>
-        <span class="status-label">服务器:</span>
+        <span class="status-label">{{ $t('connectionStatus.server') }}:</span>
         <el-tag type="info" size="small">{{ connection.server }}:{{ connection.port }}</el-tag>
       </div>
       
@@ -13,26 +13,26 @@
         <el-icon class="status-icon" :color="connection.mode === 'proxy' ? '#E6A23C' : '#67C23A'">
           <Connection />
         </el-icon>
-        <span class="status-label">模式:</span>
+        <span class="status-label">{{ $t('connectionStatus.mode') }}:</span>
         <el-tag 
           :type="connection.mode === 'proxy' ? 'warning' : 'success'" 
           size="small"
         >
-          {{ connection.mode === 'proxy' ? '服务器转发' : '客户端直连' }}
+          {{ connection.mode === 'proxy' ? $t('connectionStatus.proxyMode') : $t('connectionStatus.directMode') }}
         </el-tag>
       </div>
       
       <!-- 当前数据库 -->
       <div v-if="currentDatabase" class="status-item">
         <el-icon class="status-icon" color="#67C23A"><Files /></el-icon>
-        <span class="status-label">数据库:</span>
+        <span class="status-label">{{ $t('connectionStatus.database') }}:</span>
         <el-tag type="success" size="small">{{ currentDatabase }}</el-tag>
       </div>
       
       <!-- 连接名称（如果有） -->
       <div v-if="connection.name" class="status-item">
         <el-icon class="status-icon" color="#909399"><User /></el-icon>
-        <span class="status-label">连接名:</span>
+        <span class="status-label">{{ $t('connectionStatus.connectionName') }}:</span>
         <span class="connection-name">{{ connection.name }}</span>
       </div>
     </div>
@@ -40,7 +40,7 @@
     <!-- 无连接状态 -->
     <div v-else class="no-connection">
       <el-icon color="#F56C6C"><Warning /></el-icon>
-      <span>未连接</span>
+      <span>{{ $t('connectionStatus.notConnected') }}</span>
     </div>
   </div>
 </template>
@@ -48,6 +48,9 @@
 <script setup lang="ts">
 import { Monitor, Connection, Files, User, Warning } from '@element-plus/icons-vue'
 import type { ConnectionConfig } from '~/composables/useApi'
+
+// 国际化
+const { t: $t } = useI18n()
 
 interface Props {
   connection?: ConnectionConfig | null

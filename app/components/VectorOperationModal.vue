@@ -77,64 +77,64 @@
       <!-- 文本内容 (嵌入插入) -->
       <el-form-item 
         v-if="operation === 'insert' && form.insertType === 'embedding'"
-        label="文本内容" 
+        :label="$t('vectorModal.textContent')" 
         prop="text"
       >
         <el-input 
           v-model="form.text"
           type="textarea" 
           :rows="4"
-          placeholder="输入要转换为向量的文本内容"
+          :placeholder="$t('vectorModal.textPlaceholder')"
         />
       </el-form-item>
 
       <!-- 元数据 (插入操作) -->
       <el-form-item 
         v-if="operation === 'insert'"
-        label="元数据 (JSON)" 
+        :label="$t('vectorModal.metadata')" 
         prop="metadata"
       >
         <el-input 
           v-model="form.metadata"
           type="textarea" 
           :rows="3"
-          placeholder='{"key": "value", "tag": "example"}'
+          :placeholder="$t('vector.metadataPlaceholder')"
         />
       </el-form-item>
 
       <!-- 查询文本 (文本搜索) -->
       <el-form-item 
         v-if="operation === 'search' && form.searchType === 'text'"
-        label="查询文本" 
+        :label="$t('vectorModal.queryText')" 
         prop="queryText"
       >
         <el-input 
           v-model="form.queryText"
           type="textarea" 
           :rows="3"
-          placeholder="输入查询文本"
+          :placeholder="$t('vectorModal.queryTextPlaceholder')"
         />
       </el-form-item>
 
       <!-- 查询向量 (向量搜索) -->
       <el-form-item 
         v-if="operation === 'search' && form.searchType === 'vector'"
-        label="查询向量" 
+        :label="$t('vectorModal.queryVector')" 
         prop="queryVector"
       >
         <el-input 
           v-model="form.queryVector"
           type="textarea" 
           :rows="4"
-          placeholder="输入查询向量，格式：[0.1, 0.2, 0.3, ...]"
+          :placeholder="$t('vectorModal.queryVectorPlaceholder')"
         />
-        <p class="help-text">格式：[0.1, 0.2, 0.3] 单个向量数组</p>
+        <p class="help-text">{{ $t('vectorModal.queryVectorFormat') }}</p>
       </el-form-item>
 
       <!-- 返回数量 (搜索操作) -->
       <el-form-item 
         v-if="operation === 'search'"
-        label="返回数量" 
+        :label="$t('vectorModal.topK')" 
         prop="topK"
       >
         <el-input-number 

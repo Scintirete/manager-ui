@@ -60,13 +60,13 @@ const form = reactive({
   name: ''
 })
 
-const rules: FormRules = {
+const rules = computed((): FormRules => ({
   name: [
-    { required: true, message: '请输入数据库名称', trigger: 'blur' },
-    { min: 1, max: 50, message: '长度在 1 到 50 个字符', trigger: 'blur' },
-    { pattern: /^[a-zA-Z0-9_-]+$/, message: '只能包含字母、数字、下划线和连字符', trigger: 'blur' }
+    { required: true, message: $t('databaseForm.nameRequired'), trigger: 'blur' },
+    { min: 1, max: 50, message: $t('collectionForm.nameLength'), trigger: 'blur' },
+    { pattern: /^[a-zA-Z0-9_-]+$/, message: $t('databaseForm.nameInvalid'), trigger: 'blur' }
   ]
-}
+}))
 
 const dialogVisible = computed({
   get: () => props.visible,

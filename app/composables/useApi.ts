@@ -63,7 +63,7 @@ interface ConnectionValidationResult {
 // 动态导入axios（仅在浏览器环境中）
 const getAxios = async () => {
   if (typeof window === 'undefined') {
-    throw new Error('axios只能在浏览器环境中使用')
+    throw new Error('axios can only be used in browser environment')
   }
   // 使用 import() 语法避免 TypeScript 错误
   const axios = await import('axios')
@@ -151,7 +151,7 @@ export function useApi() {
       } else {
         // 客户端直连模式 - 仅在浏览器中使用
         if (typeof window === 'undefined') {
-          throw new Error('客户端直连模式只能在浏览器中使用')
+          throw new Error('Direct client mode can only be used in browser')
         }
         
         const axiosInstance = await getAxios()
@@ -179,15 +179,15 @@ export function useApi() {
       
       // 统一错误处理
       if (error.code === 'ECONNREFUSED') {
-        throw new Error('连接被拒绝，请检查服务器地址和端口')
+        throw new Error('Connection refused, please check server address and port')
       }
       
       if (error.code === 'ECONNABORTED') {
-        throw new Error('请求超时，请检查网络连接')
+        throw new Error('Request timeout, please check network connection')
       }
       
       if (error.response) {
-        const message = error.response.data?.message || error.response.statusText || '请求失败'
+        const message = error.response.data?.message || error.response.statusText || 'Request failed'
         throw new Error(`${message} (${error.response.status})`)
       }
       
@@ -218,7 +218,7 @@ export function useApi() {
         return {
           isHealthy: false,
           isAuthenticated: false,
-          error: '服务器连接失败，请检查地址和端口'
+          error: 'Server connection failed, please check address and port'
         }
       }
 
@@ -231,11 +231,11 @@ export function useApi() {
         }
       } catch (error: any) {
         // 判断是否是鉴权错误
-        if (error.message.includes('401') || error.message.includes('Unauthorized') || error.message.includes('认证')) {
+        if (error.message.includes('401') || error.message.includes('Unauthorized') || error.message.includes('auth')) {
           return {
             isHealthy: true,
             isAuthenticated: false,
-            error: '认证失败，请检查密码是否正确'
+            error: 'Authentication failed, please check if password is correct'
           }
         }
         
@@ -243,14 +243,14 @@ export function useApi() {
         return {
           isHealthy: true,
           isAuthenticated: false,
-          error: `鉴权验证失败：${error.message}`
+          error: `Authentication validation failed: ${error.message}`
         }
       }
     } catch (error: any) {
       return {
         isHealthy: false,
         isAuthenticated: false,
-        error: error.message || '连接验证失败'
+        error: error.message || 'Connection validation failed'
       }
     }
   }

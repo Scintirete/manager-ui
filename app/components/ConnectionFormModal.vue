@@ -1,7 +1,7 @@
 <template>
   <el-dialog 
     v-model="dialogVisible" 
-    :title="isEditing ? '编辑连接' : '新建连接'"
+    :title="isEditing ? $t('connectionForm.editConnection') : $t('connectionForm.newConnection')"
     width="500px"
     @close="handleClose"
   >
@@ -9,18 +9,18 @@
       ref="formRef"
       :model="form" 
       :rules="rules" 
-      label-width="120px"
+      label-width="140px"
       @submit.prevent="handleSubmit"
     >
-      <el-form-item label="连接名称" prop="name">
+      <el-form-item :label="$t('connectionForm.name')" prop="name">
         <el-input 
           v-model="form.name" 
-          placeholder="可选，用于识别连接"
+          :placeholder="$t('connectionForm.nameOptional')"
           clearable
         />
       </el-form-item>
       
-      <el-form-item label="服务器地址" prop="server">
+      <el-form-item :label="$t('connectionForm.server')" prop="server">
         <el-input 
           v-model="form.server" 
           placeholder="127.0.0.1"
@@ -28,7 +28,7 @@
         />
       </el-form-item>
       
-      <el-form-item label="HTTP端口" prop="port">
+      <el-form-item :label="$t('connectionForm.port')" prop="port">
         <el-input-number 
           v-model="form.port" 
           :min="1" 
@@ -38,46 +38,46 @@
         />
       </el-form-item>
       
-      <el-form-item label="密码" prop="password">
+      <el-form-item :label="$t('connectionForm.password')" prop="password">
         <el-input 
           v-model="form.password" 
           type="password"
-          placeholder="留空表示无密码"
+          :placeholder="$t('connectionForm.passwordOptional')"
           show-password
           clearable
         />
       </el-form-item>
       
-      <el-form-item label="连接模式" prop="mode">
+      <el-form-item :label="$t('connectionForm.mode')" prop="mode">
         <el-radio-group v-model="form.mode">
-          <el-radio value="client">客户端直连</el-radio>
+          <el-radio value="client">{{ $t('connectionForm.directConnect') }}</el-radio>
           <el-radio 
             value="proxy" 
             :disabled="!enableServerProxy"
           >
-            服务器转发
+            {{ $t('connectionForm.serverProxy') }}
             <span v-if="!enableServerProxy" style="color: #f56c6c; font-size: 12px;">
-              （已禁用）
+              {{ $t('common.disabled') }}
             </span>
           </el-radio>
         </el-radio-group>
         <p class="help-text" v-if="form.mode === 'client'">
-          适用于本地网络可连接到的向量数据库实例，不走服务器转发，所有网络操作均在本地执行<br>
+          {{ $t('connectionForm.directDescription') }}<br>
         </p>
         <p class="help-text" v-else>
-          适用于本地网络直接访问不到向量数据库实例的情况，所有网络操作均通过服务器转发执行，如内网环境、docker 容器网络、k8s 内部网络等
+          {{ $t('connectionForm.proxyDescription') }}
         </p>
       </el-form-item>
     </el-form>
     
     <template #footer>
-      <el-button @click="handleClose">取消</el-button>
+      <el-button @click="handleClose">{{ $t('common.cancel') }}</el-button>
       <el-button 
         type="primary" 
         @click="handleSubmit"
         :loading="submitting"
       >
-        {{ isEditing ? '更新连接' : '添加连接' }}
+        {{ isEditing ? $t('common.update') : $t('common.add') }}
       </el-button>
     </template>
   </el-dialog>
@@ -127,19 +127,22 @@ const form = ref<Omit<ConnectionConfig, 'id'>>({
   mode: 'client'
 })
 
+// 国际化
+const { t: $t } = useI18n()
+
 // 表单验证规则
-const rules: FormRules = {
+const rules = computed((): FormRules => ({
   server: [
-    { required: true, message: '请输入服务器地址', trigger: 'blur' }
+    { required: true, message: $t('connectionForm.serverRequired'), trigger: 'blur' }
   ],
   port: [
-    { required: true, message: '请输入端口号', trigger: 'blur' },
-    { type: 'number', min: 1, max: 65535, message: '端口号范围：1-65535', trigger: 'blur' }
+    { required: true, message: $t('connectionForm.portRequired'), trigger: 'blur' },
+    { type: 'number', min: 1, max: 65535, message: $t('connectionForm.portInvalid'), trigger: 'blur' }
   ],
   mode: [
-    { required: true, message: '请选择连接模式', trigger: 'change' }
+    { required: true, message: $t('common.required'), trigger: 'change' }
   ]
-}
+}))
 
 // 重置表单
 const resetForm = () => {

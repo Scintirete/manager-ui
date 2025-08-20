@@ -201,7 +201,7 @@ const operationLoading = ref(false)
 const parseVectorArray = (input: string): number[][] => {
   const trimmed = input.trim()
   if (!trimmed) {
-    throw new Error('向量数组不能为空')
+    throw new Error($t('messages.vectorArrayEmpty'))
   }
 
   try {
@@ -220,7 +220,7 @@ const parseVectorArray = (input: string): number[][] => {
       return lines.map(line => {
         const parsed = JSON.parse(line.trim())
         if (!Array.isArray(parsed) || !parsed.every(n => typeof n === 'number')) {
-          throw new Error('向量必须是数字数组')
+          throw new Error($t('messages.vectorArrayMustBeNumbers'))
         }
         return parsed
       })
@@ -239,12 +239,12 @@ const parseVectorArray = (input: string): number[][] => {
       }
     }
     
-    throw new Error('不支持的向量格式')
+    throw new Error($t('messages.unsupportedVectorFormat'))
   } catch (error: any) {
-    if (error.message.includes('不支持的向量格式') || error.message.includes('向量必须是数字数组')) {
+    if (error.message.includes($t('messages.unsupportedVectorFormat')) || error.message.includes($t('messages.vectorArrayMustBeNumbers'))) {
       throw error
     }
-    throw new Error('JSON格式错误，请检查语法')
+    throw new Error($t('messages.jsonFormatError'))
   }
 }
 
@@ -268,14 +268,14 @@ const initializePage = async () => {
   const dbName = route.query.database as string
   
   if (!connectionId || !dbName) {
-    ElMessage.error('缺少必要参数')
+    ElMessage.error($t('messages.missingRequiredParams'))
     await router.push('/')
     return
   }
 
   const connection = getConnection(connectionId)
   if (!connection) {
-    ElMessage.error('连接配置不存在')
+    ElMessage.error($t('messages.connectionNotFound'))
     await router.push('/')
     return
   }
@@ -305,7 +305,7 @@ const loadCollections = async () => {
     collections.value = response.collections || []
   } catch (error: any) {
     console.error('Failed to load collections:', error)
-    ElMessage.error(`加载集合列表失败：${error.message || '未知错误'}`)
+    ElMessage.error(`${$t('messages.loadCollectionsFailed')}：${error.message || $t('messages.unknownError')}`)
   }
 }
 
@@ -316,7 +316,7 @@ const loadEmbeddingModels = async () => {
     embeddingModels.value = response.models || []
   } catch (error: any) {
     console.error('Failed to load embedding models:', error)
-    ElMessage.error(`加载嵌入模型列表失败：${error.message || '未知错误'}`)
+    ElMessage.error(`${$t('messages.loadModelsFailed')}：${error.message || $t('messages.unknownError')}`)
   }
 }
 
@@ -351,15 +351,15 @@ const handleCreateCollection = async (data: {
     )
     
     if (response.success) {
-      ElMessage.success(`集合 "${data.name}" 创建成功`)
+      ElMessage.success($t('messages.collectionCreated', { name: data.name }))
       createCollectionDialogVisible.value = false
       await refreshCollections()
     } else {
-      ElMessage.error(response.message || '创建集合失败')
+      ElMessage.error(response.message || $t('messages.createCollectionFailed'))
     }
   } catch (error: any) {
     console.error('Create collection failed:', error)
-    ElMessage.error(`创建集合失败：${error.message || '未知错误'}`)
+    ElMessage.error(`${$t('messages.createCollectionFailed')}：${error.message || $t('messages.unknownError')}`)
   } finally {
     createCollectionDialogRef.value?.setLoading(false)
   }
@@ -369,11 +369,11 @@ const handleCreateCollection = async (data: {
 const deleteCollection = async (collection: CollectionInfo) => {
   try {
     await ElMessageBox.confirm(
-      `确定要删除集合 "${collection.name}" 吗？此操作不可撤销！`,
-      '危险操作',
+      $t('messages.deleteCollectionConfirm', { name: collection.name }),
+      $t('messages.dangerousOperation'),
       {
-        confirmButtonText: '确认删除',
-        cancelButtonText: '取消',
+        confirmButtonText: $t('messages.confirmDelete'),
+        cancelButtonText: $t('messages.cancel'),
         type: 'error',
         confirmButtonClass: 'el-button--danger'
       }
@@ -382,15 +382,15 @@ const deleteCollection = async (collection: CollectionInfo) => {
     const response = await dropCollection(currentDatabase.value, collection.name)
     
     if (response.success) {
-      ElMessage.success(`集合 "${collection.name}" 删除成功，共删除了 ${response.dropped_vectors} 个向量`)
+      ElMessage.success($t('messages.collectionDeleted', { name: collection.name, count: response.dropped_vectors }))
       await refreshCollections()
     } else {
-      ElMessage.error(response.message || '删除集合失败')
+      ElMessage.error(response.message || $t('messages.deleteCollectionFailed'))
     }
   } catch (error: any) {
     if (error !== 'cancel') {
       console.error('Delete collection failed:', error)
-      ElMessage.error(`删除集合失败：${error.message || '未知错误'}`)
+      ElMessage.error(`${$t('messages.deleteCollectionFailed')}：${error.message || $t('messages.unknownError')}`)
     }
   }
 }
@@ -407,8 +407,8 @@ const showVectorDialog = (operation: 'insert' | 'search' | 'delete', collection:
 const handleVectorOperation = async (formData: any) => {
   if (!currentCollection.value) return
 
-  const operationName = currentOperation.value === 'insert' ? '插入' : 
-                       currentOperation.value === 'search' ? '搜索' : '删除'
+  const operationName = currentOperation.value === 'insert' ? $t('messages.insert') : 
+                       currentOperation.value === 'search' ? $t('messages.search') : $t('messages.delete')
   
   operationLoading.value = true
   try {
@@ -438,7 +438,7 @@ const handleInsert = async (formData: any) => {
     try {
       metadata = JSON.parse(formData.metadata)
     } catch {
-      ElMessage.error('元数据格式错误，请输入有效的JSON')
+      ElMessage.error($t('messages.metadataFormatError'))
       return
     }
   }
@@ -448,7 +448,7 @@ const handleInsert = async (formData: any) => {
   if (formData.insertType === 'array') {
     // 数组插入模式
     if (!formData.vectorArray.trim()) {
-      ElMessage.warning('请填写向量数组')
+      ElMessage.warning($t('messages.fillVectorArray'))
       return
     }
 
@@ -463,13 +463,13 @@ const handleInsert = async (formData: any) => {
         vectors
       )
     } catch (error: any) {
-      ElMessage.error(`向量数组格式错误：${error.message}`)
+      ElMessage.error(`${$t('messages.vectorArrayFormatError')}：${error.message}`)
       return
     }
   } else {
     // 嵌入插入模式
     if (!formData.text.trim()) {
-      ElMessage.warning('请填写文本内容')
+      ElMessage.warning($t('messages.fillTextContent'))
       return
     }
 
@@ -499,7 +499,7 @@ const handleSearch = async (formData: any) => {
   if (formData.searchType === 'vector') {
     // 向量搜索模式
     if (!formData.queryVector.trim()) {
-      ElMessage.warning('请填写查询向量')
+      ElMessage.warning($t('messages.fillQueryVector'))
       return
     }
 
@@ -507,7 +507,7 @@ const handleSearch = async (formData: any) => {
       // 解析查询向量
       const queryVector = parseVectorArray(formData.queryVector)[0]
       if (!queryVector || queryVector.length === 0) {
-        throw new Error('查询向量不能为空')
+        throw new Error($t('messages.vectorArrayEmpty'))
       }
       
       response = await searchVectors(
@@ -518,13 +518,13 @@ const handleSearch = async (formData: any) => {
         formData.filter || undefined
       )
     } catch (error: any) {
-      ElMessage.error(`查询向量格式错误：${error.message}`)
+      ElMessage.error(`${$t('vector.vectorFormatError')}：${error.message}`)
       return
     }
   } else {
     // 文本搜索模式
     if (!formData.queryText.trim()) {
-      ElMessage.warning('请填写查询文本')
+      ElMessage.warning($t('messages.fillQueryText'))
       return
     }
 
@@ -539,28 +539,28 @@ const handleSearch = async (formData: any) => {
   }
 
   searchResults.value = response.results || []
-  ElMessage.success(`找到 ${searchResults.value.length} 个结果`)
+  ElMessage.success($t('messages.foundResults', { count: searchResults.value.length }))
 }
 
 // 处理删除向量
 const handleDelete = async (formData: any) => {
   if (!formData.ids.trim()) {
-    ElMessage.warning('请填写向量ID')
+    ElMessage.warning($t('messages.fillVectorIds'))
     return
   }
 
   const ids = formData.ids.split(',').map((id: string) => parseInt(id.trim())).filter((id: number) => !isNaN(id))
   if (ids.length === 0) {
-    ElMessage.error('请输入有效的向量ID')
+    ElMessage.error($t('vector.invalidIds'))
     return
   }
 
   await ElMessageBox.confirm(
-    `确定要删除 ${ids.length} 个向量吗？此操作不可撤销！`,
-    '确认删除',
+    $t('messages.deleteVectorConfirm', { count: ids.length }),
+    $t('messages.confirmDelete'),
     {
-      confirmButtonText: '确认删除',
-      cancelButtonText: '取消',
+      confirmButtonText: $t('messages.confirmDelete'),
+      cancelButtonText: $t('messages.cancel'),
       type: 'warning'
     }
   )
@@ -571,7 +571,7 @@ const handleDelete = async (formData: any) => {
     ids
   )
 
-  ElMessage.success(`成功删除 ${response.deleted_count} 个向量`)
+  ElMessage.success($t('messages.vectorDeleted', { count: response.deleted_count }))
   vectorDialogVisible.value = false
   await refreshCollections()
 }

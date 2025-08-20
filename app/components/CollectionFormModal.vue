@@ -10,7 +10,7 @@
       ref="formRef"
       :model="form"
       :rules="rules"
-      label-width="120px"
+      label-width="160px"
     >
       <el-form-item :label="$t('collectionForm.name')" prop="name">
         <el-input

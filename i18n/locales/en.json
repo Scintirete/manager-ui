@@ -3,7 +3,7 @@
     "connectionManagement": "Connection Management",
     "databaseManagement": "Database Management",
     "collectionManagement": "Collection Management",
-    "docsAndResources": "Documentation & Resources",
+    "docsAndResources": "Documentation",
     "officialWebsite": "Scintirete Official Website",
     "sourceCode": "Scintirete Source Code",
     "managerUiSource": "Manager UI Source Code"
@@ -35,6 +35,15 @@
     "connectSuccess": "Connection successful",
     "noResponse": "Server no response",
     "validationFailed": "Connection validation failed"
+  },
+  "connectionStatus": {
+    "server": "Server",
+    "mode": "Mode",
+    "database": "Database",
+    "connectionName": "Connection Name",
+    "notConnected": "Not Connected",
+    "proxyMode": "Server Proxy",
+    "directMode": "Direct Connect"
   },
   "connectionForm": {
     "newConnection": "New Connection",
@@ -197,7 +206,12 @@
     "loadModelsFailed": "Failed to load embedding models",
     "l2": "L2",
     "cosine": "Cosine",
-    "innerProduct": "Inner Product"
+    "innerProduct": "Inner Product",
+    "cancel": "Cancel",
+    "update": "Update",
+    "add": "Add",
+    "disabled": "(Disabled)",
+    "required": "This field is required"
   },
   "language": {
     "switch": "Language",
@@ -277,5 +291,38 @@
     "confirm": "OK",
     "copySuccess": "ID list copied to clipboard",
     "copyFailed": "Copy failed"
+  },
+  "messages": {
+    "vectorArrayEmpty": "Vector array cannot be empty",
+    "vectorArrayMustBeNumbers": "Vector must be a number array",
+    "unsupportedVectorFormat": "Unsupported vector format",
+    "jsonFormatError": "JSON format error, please check syntax",
+    "missingRequiredParams": "Missing required parameters",
+    "connectionNotFound": "Connection configuration not found",
+    "loadCollectionsFailed": "Failed to load collection list",
+    "loadModelsFailed": "Failed to load embedding model list",
+    "collectionCreated": "Collection \"{name}\" created successfully",
+    "createCollectionFailed": "Failed to create collection",
+    "deleteCollectionConfirm": "Are you sure you want to delete collection \"{name}\"? This operation cannot be undone!",
+    "dangerousOperation": "Dangerous Operation",
+    "confirmDelete": "Confirm Delete",
+    "cancel": "Cancel",
+    "collectionDeleted": "Collection \"{name}\" deleted successfully, {count} vectors removed",
+    "deleteCollectionFailed": "Failed to delete collection",
+    "resetSearchResults": "Reset search results",
+    "insert": "Insert",
+    "search": "Search",
+    "delete": "Delete",
+    "metadataFormatError": "Metadata format error, please enter valid JSON",
+    "fillVectorArray": "Please fill in vector array",
+    "vectorArrayFormatError": "Vector array format error",
+    "fillTextContent": "Please fill in text content",
+    "fillQueryVector": "Please fill in query vector",
+    "fillQueryText": "Please fill in query text",
+    "foundResults": "Found {count} results",
+    "fillVectorIds": "Please fill in vector IDs",
+    "deleteVectorConfirm": "Are you sure you want to delete {count} vectors? This operation cannot be undone!",
+    "vectorDeleted": "Successfully deleted {count} vectors",
+    "unknownError": "Unknown error"
   }
 }
