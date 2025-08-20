@@ -2,7 +2,7 @@
   <NuxtLayout 
     name="default" 
     :current-connection="currentConnection"
-    page-title="连接管理" 
+    :page-title="$t('connection.title')" 
   >
     <template #page-actions>
       <el-button 
@@ -10,7 +10,7 @@
         @click="showCreateModal"
         :icon="Plus"
       >
-        新建连接
+        {{ $t('connection.newConnection') }}
       </el-button>
     </template>
 
@@ -38,7 +38,7 @@
                     :type="connection.mode === 'proxy' ? 'warning' : 'success'" 
                     size="small"
                   >
-                    {{ connection.mode === 'proxy' ? '代理模式' : '直连模式' }}
+                    {{ connection.mode === 'proxy' ? $t('connection.proxyMode') : $t('connection.directMode') }}
                   </el-tag>
                 </div>
                 <div class="connection-actions" @click.stop>
@@ -48,7 +48,7 @@
                     @click="editConnection(connection)"
                     :icon="Edit"
                   >
-                    编辑
+                    {{ $t('connection.edit') }}
                   </el-button>
                   <el-button 
                     type="danger" 
@@ -56,7 +56,7 @@
                     @click="deleteConnection(connection.id)"
                     :icon="Delete"
                   >
-                    删除
+                    {{ $t('connection.delete') }}
                   </el-button>
                 </div>
               </div>
@@ -68,12 +68,12 @@
                 </div>
                 <div class="detail-item">
                   <el-icon><Lock /></el-icon>
-                  <span v-if="connection.password">需要密码验证</span>
-                  <span v-else>无需密码验证</span>
+                  <span v-if="connection.password">{{ $t('connection.requiresPassword') }}</span>
+                  <span v-else>{{ $t('connection.noPassword') }}</span>
                 </div>
                 <div class="detail-item">
                   <el-icon><Position /></el-icon>
-                  <span>{{ connection.mode === 'proxy' ? '代理模式' : '直连模式' }}</span>
+                  <span>{{ connection.mode === 'proxy' ? $t('connection.proxyMode') : $t('connection.directMode') }}</span>
                 </div>
               </div>
 
@@ -84,7 +84,7 @@
                   :loading="connectingIds.includes(connection.id || '')"
                   style="width: 100%"
                 >
-                  {{ connectingIds.includes(connection.id || '') ? '连接中...' : '连接' }}
+                  {{ connectingIds.includes(connection.id || '') ? $t('connection.connecting') : $t('connection.connect') }}
                 </el-button>
               </div>
             </div>
@@ -93,9 +93,9 @@
 
         <!-- 空状态卡片 -->
         <div v-if="connections.length === 0" class="empty-state">
-          <el-empty description="暂无连接配置">
+          <el-empty :description="$t('connection.noConnections')">
             <el-button type="primary" @click="showCreateModal">
-              创建第一个连接
+              {{ $t('connection.createFirst') }}
             </el-button>
           </el-empty>
         </div>
@@ -107,7 +107,7 @@
           <template #header>
             <div class="quick-start-header">
               <el-icon><QuestionFilled /></el-icon>
-              <span>快速开始</span>
+              <span>{{ $t('quickStart.title') }}</span>
             </div>
           </template>
           
@@ -115,31 +115,31 @@
             <div class="step-item">
               <div class="step-number">1</div>
               <div class="step-content">
-                <h4>创建连接</h4>
-                <p>配置 Scintirete 服务器的连接信息</p>
+                <h4>{{ $t('quickStart.step1') }}</h4>
+                <p>{{ $t('quickStart.step1Desc') }}</p>
               </div>
             </div>
             
             <div class="step-item">
               <div class="step-number">2</div>
               <div class="step-content">
-                <h4>管理数据库</h4>
-                <p>创建和管理向量数据库</p>
+                <h4>{{ $t('quickStart.step2') }}</h4>
+                <p>{{ $t('quickStart.step2Desc') }}</p>
               </div>
             </div>
             
             <div class="step-item">
               <div class="step-number">3</div>
               <div class="step-content">
-                <h4>操作集合</h4>
-                <p>在集合中插入、搜索和删除向量</p>
+                <h4>{{ $t('quickStart.step3') }}</h4>
+                <p>{{ $t('quickStart.step3Desc') }}</p>
               </div>
             </div>
           </div>
 
           <div class="quick-start-actions">
             <el-button type="primary" @click="showCreateModal" style="width: 100%">
-              开始使用
+              {{ $t('quickStart.getStarted') }}
             </el-button>
           </div>
         </el-card>
@@ -162,9 +162,13 @@
 import { Plus, Edit, Delete, Monitor, Lock, QuestionFilled, Position } from '@element-plus/icons-vue'
 import type { ConnectionConfig } from '~/composables/useApi'
 
+// 国际化
+const { t: $t } = useI18n()
+const $localePath = useLocalePath()
+
 // 设置页面元信息
 useHead({
-  title: 'Scintirete Manager UI - 连接管理'
+  title: 'Scintirete Manager UI - ' + $t('connection.title')
 })
 
 const config = useRuntimeConfig()
@@ -199,12 +203,12 @@ const handleSubmit = async (connectionData: ConnectionConfig) => {
     
     // 添加新连接
     addConnection(connectionData)
-    ElMessage.success('连接配置已保存')
+    ElMessage.success($t('connection.saved'))
     
     modalVisible.value = false
   } catch (error: any) {
     console.error('Save connection failed:', error)
-    ElMessage.error(`保存失败：${error.message || '未知错误'}`)
+    ElMessage.error(`${$t('connection.saveFailed')}：${error.message || $t('common.unknown')}`)
   } finally {
     modalRef.value?.setLoading(false)
   }
@@ -217,14 +221,14 @@ const handleUpdate = async (id: string, connectionData: ConnectionConfig) => {
     const success = updateConnection(id, connectionData)
     modalVisible.value = false
     if (success) {
-      ElMessage.success('连接配置已更新')
+      ElMessage.success($t('connection.updated'))
     } else {
-      ElMessage.error('连接配置更新失败')
+      ElMessage.error($t('connection.updateFailed'))
       return
     }
   } catch (error: any) {
     console.error('Update connection failed:', error)
-    ElMessage.error(`更新失败：${error.message || '未知错误'}`)
+    ElMessage.error(`${$t('connection.updateError')}：${error.message || $t('common.unknown')}`)
   } finally {
     modalRef.value?.setLoading(false)
   }
@@ -245,19 +249,19 @@ const connectToDatabase = async (connection: ConnectionConfig) => {
     const validationResult = await validateConnection()
     
     if (validationResult.isHealthy && validationResult.isAuthenticated) {
-      ElMessage.success('连接成功')
+      ElMessage.success($t('connection.connectSuccess'))
       // 跳转到数据库管理页面
-      await router.push({
+      await router.push($localePath({
         path: '/database',
         query: { connection: connectionId }
-      })
+      }))
     } else {
       // 根据验证结果显示具体错误信息
-      ElMessage.error(validationResult.error || '连接验证失败')
+      ElMessage.error(validationResult.error || $t('connection.validationFailed'))
     }
   } catch (error: any) {
     console.error('Connection failed:', error)
-    ElMessage.error(`连接失败：${error.message || '服务器无响应'}`)
+    ElMessage.error(`${$t('connection.connectFailed')}：${error.message || $t('connection.noResponse')}`)
   } finally {
     const index = connectingIds.value.indexOf(connectionId)
     if (index > -1) {
@@ -272,17 +276,17 @@ const deleteConnection = async (connectionId: string | undefined) => {
   
   try {
     await ElMessageBox.confirm(
-      '确定要删除这个连接配置吗？',
-      '确认删除',
+      $t('connection.deleteConfirm'),
+      $t('connection.confirmDelete'),
       {
-        confirmButtonText: '确认',
-        cancelButtonText: '取消',
+        confirmButtonText: $t('connection.confirm'),
+        cancelButtonText: $t('connection.cancel'),
         type: 'warning'
       }
     )
     
     removeConnection(connectionId)
-    ElMessage.success('连接配置已删除')
+    ElMessage.success($t('connection.deleted'))
   } catch {
     // 用户取消删除
   }

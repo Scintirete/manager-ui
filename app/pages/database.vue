@@ -1,16 +1,16 @@
 <template>
   <NuxtLayout 
     name="default" 
-    page-title="数据库管理"
+    :page-title="$t('database.title')"
     :current-connection="currentConnection"
   >
     <template #page-actions>
       <el-button type="default" @click="goBack" style="margin-right: 16px;">
         <el-icon><ArrowLeft /></el-icon>
-        返回连接配置
+        {{ $t('database.backToConnections') }}
       </el-button>
       <div v-if="currentConnection" style="margin-right: 16px; color: #606266;">
-        连接: {{ currentConnection?.name || `${currentConnection?.server}:${currentConnection?.port}` }}
+        {{ $t('database.connection') }}: {{ currentConnection?.name || `${currentConnection?.server}:${currentConnection?.port}` }}
       </div>
       <el-button 
         type="success" 
@@ -18,7 +18,7 @@
         :disabled="loading"
         style="margin-right: 10px"
       >
-        创建数据库
+        {{ $t('database.createDatabase') }}
       </el-button>
       <el-button 
         type="primary" 
@@ -26,14 +26,14 @@
         :loading="loading"
         :icon="Refresh"
       >
-        刷新
+        {{ $t('database.refresh') }}
       </el-button>
     </template>
 
     <div class="database-content">
       <el-card shadow="hover">
         <template #header>
-          <span>数据库列表</span>
+          <span>{{ $t('database.list') }}</span>
         </template>
         
         <!-- 加载状态 -->
@@ -43,26 +43,26 @@
         
         <!-- 空状态 -->
         <div v-else-if="!databases.length" class="no-databases">
-          <el-empty description="没有找到数据库">
-            <el-button type="primary" @click="showCreateDialog">创建数据库</el-button>
+          <el-empty :description="$t('database.noDatabases')">
+            <el-button type="primary" @click="showCreateDialog">{{ $t('database.createDatabase') }}</el-button>
           </el-empty>
         </div>
         
         <!-- 数据库列表 -->
         <el-table v-else :data="databases" stripe>
-          <el-table-column prop="name" label="数据库名称" min-width="200">
+          <el-table-column prop="name" :label="$t('database.name')" min-width="200">
             <template #default="{ row }">
               <strong>{{ row }}</strong>
             </template>
           </el-table-column>
-          <el-table-column label="操作" width="200">
+          <el-table-column :label="$t('database.operations')" width="200">
             <template #default="{ row }">
               <el-button 
                 type="primary" 
                 size="small"
                 @click="manageCollections(row)"
               >
-                管理集合
+                {{ $t('database.manageCollections') }}
               </el-button>
               <el-button 
                 v-if="config.public.enableDbDelete"
@@ -70,11 +70,11 @@
                 size="small"
                 @click="deleteDatabase(row)"
               >
-                删除
+                {{ $t('database.delete') }}
               </el-button>
               <el-tooltip 
                 v-else
-                content="数据库删除操作已被管理员禁用"
+                :content="$t('database.deleteDisabled')"
                 placement="top"
               >
                 <el-button 
@@ -82,7 +82,7 @@
                   size="small"
                   disabled
                 >
-                  删除
+                  {{ $t('database.delete') }}
                 </el-button>
               </el-tooltip>
             </template>
@@ -102,11 +102,14 @@
 
 <script setup lang="ts">
 import { ArrowLeft, Refresh } from '@element-plus/icons-vue'
-import type { ConnectionConfig } from '~/composables/useApi'
+
+// 国际化
+const { t: $t } = useI18n()
+const $localePath = useLocalePath()
 
 // 设置页面元信息
 useHead({
-  title: 'Scintirete Manager UI - 数据库管理'
+  title: 'Scintirete Manager UI - ' + $t('database.title')
 })
 
 // 获取路由参数
@@ -128,15 +131,15 @@ const createDialogRef = ref()
 const initializeConnection = async () => {
   const connectionId = route.query.connection as string
   if (!connectionId) {
-    ElMessage.error('缺少连接参数')
-    await router.push('/')
+    ElMessage.error($t('common.missingParams'))
+    await router.push($localePath('/'))
     return
   }
 
   const connection = getConnection(connectionId)
   if (!connection) {
-    ElMessage.error('连接配置不存在')
-    await router.push('/')
+    ElMessage.error($t('common.connectionNotFound'))
+    await router.push($localePath('/'))
     return
   }
 
@@ -160,11 +163,11 @@ const loadDatabases = async () => {
     databases.value = response.names || []
   } catch (error: any) {
     console.error('Failed to load databases:', error)
-    ElMessage.error(`加载数据库列表失败：${error.message || '未知错误'}`)
+    ElMessage.error(`${$t('database.loadFailed')}：${error.message || $t('common.unknown')}`)
     
     // 如果是认证相关错误，返回连接页面
     if (error.status === 401 || error.status === 403) {
-      await router.push('/')
+      await router.push($localePath('/'))
     }
   }
 }
@@ -182,13 +185,13 @@ const refreshDatabases = async () => {
 // 管理集合
 const manageCollections = async (dbName: string) => {
   const connectionId = route.query.connection
-  await router.push({
+  await router.push($localePath({
     path: `/collection`,
     query: {
       connection: connectionId,
       database: dbName
     }
-  })
+  }))
 }
 
 // 显示创建数据库对话框
@@ -203,15 +206,15 @@ const handleCreateDatabase = async (data: { name: string }) => {
     const response = await createDatabase(data.name)
     
     if (response.success) {
-      ElMessage.success(`数据库 "${data.name}" 创建成功`)
+      ElMessage.success($t('databaseForm.created', { name: data.name }))
       createDialogVisible.value = false
       await refreshDatabases()
     } else {
-      ElMessage.error(response.message || '创建数据库失败')
+      ElMessage.error(response.message || $t('databaseForm.createFailed'))
     }
   } catch (error: any) {
     console.error('Create database failed:', error)
-    ElMessage.error(`创建数据库失败：${error.message || '未知错误'}`)
+    ElMessage.error(`${$t('databaseForm.createFailed')}：${error.message || $t('common.unknown')}`)
   } finally {
     createDialogRef.value?.setLoading(false)
   }
@@ -221,11 +224,11 @@ const handleCreateDatabase = async (data: { name: string }) => {
 const deleteDatabase = async (dbName: string) => {
   try {
     await ElMessageBox.confirm(
-      `确定要删除数据库 "${dbName}" 吗？此操作不可撤销！`,
-      '危险操作',
+      $t('database.deleteConfirm', { name: dbName }),
+      $t('database.dangerousOperation'),
       {
-        confirmButtonText: '确认删除',
-        cancelButtonText: '取消',
+        confirmButtonText: $t('database.confirmDelete'),
+        cancelButtonText: $t('database.cancel'),
         type: 'error',
         confirmButtonClass: 'el-button--danger'
       }
@@ -234,22 +237,22 @@ const deleteDatabase = async (dbName: string) => {
     const response = await dropDatabase(dbName)
     
     if (response.success) {
-      ElMessage.success(`数据库 "${dbName}" 删除成功，共删除了 ${response.dropped_collections} 个集合`)
+      ElMessage.success($t('database.deleted', { name: dbName, count: response.dropped_collections }))
       await refreshDatabases()
     } else {
-      ElMessage.error(response.message || '删除数据库失败')
+      ElMessage.error(response.message || $t('database.deleteFailed'))
     }
   } catch (error: any) {
     if (error !== 'cancel') {
       console.error('Delete database failed:', error)
-      ElMessage.error(`删除数据库失败：${error.message || '未知错误'}`)
+      ElMessage.error(`${$t('database.deleteFailed')}：${error.message || $t('common.unknown')}`)
     }
   }
 }
 
 // 返回连接配置页
 const goBack = async () => {
-  await router.push('/')
+  await router.push($localePath('/'))
 }
 
 // 页面挂载时初始化

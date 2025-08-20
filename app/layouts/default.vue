@@ -4,7 +4,7 @@
     <el-header class="layout-header">
       <div class="header-content">
         <div class="logo-section">
-          <NuxtLink to="/" style="text-decoration: none;" class="logo-link">
+          <NuxtLink :to="$localePath('/')" style="text-decoration: none;" class="logo-link">
             <div class="logo-container">
               <img src="/logo.png" alt="Scintirete Logo" class="logo-image" />
               <div class="logo-text">
@@ -20,12 +20,12 @@
         </div>
         <div class="header-actions">
           <slot name="header-actions" />
-          <!-- GitHub 链接 -->
-          <div class="github-links">
+           <!-- GitHub 链接 -->
+           <div class="github-links">
             <el-dropdown trigger="hover" placement="bottom-end">
               <div class="github-button">
                 <el-icon class="github-icon"><Link /></el-icon>
-                <span class="github-text">文档和资源</span>
+                <span class="github-text">{{ $t('nav.docsAndResources') }}</span>
                 <el-icon class="dropdown-arrow"><ArrowDown /></el-icon>
               </div>
               <template #dropdown>
@@ -34,7 +34,7 @@
                     <a href="http://scintirete.cloud.wj2015.com/" target="_blank" class="github-link">
                       <el-icon><Document /></el-icon>
                       <div class="link-content">
-                        <div class="link-title">Scintirete 官网及文档</div>
+                        <div class="link-title">{{ $t('nav.officialWebsite') }}</div>
                       </div>
                     </a>
                   </el-dropdown-item>
@@ -42,7 +42,7 @@
                     <a href="https://github.com/Scintirete/Scintirete/" target="_blank" class="github-link">
                       <el-icon><Link /></el-icon>
                       <div class="link-content">
-                        <div class="link-title">Scintirete 开源地址</div>
+                        <div class="link-title">{{ $t('nav.sourceCode') }}</div>
                       </div>
                     </a>
                   </el-dropdown-item>
@@ -50,9 +50,36 @@
                     <a href="https://github.com/Scintirete/manager-ui" target="_blank" class="github-link">
                       <el-icon><Link /></el-icon>
                       <div class="link-content">
-                        <div class="link-title">Manager UI 开源地址</div>
+                        <div class="link-title">{{ $t('nav.managerUiSource') }}</div>
                       </div>
                     </a>
+                  </el-dropdown-item>
+                </el-dropdown-menu>
+              </template>
+            </el-dropdown>
+          </div>
+          <!-- 语言切换器 -->
+          <div class="language-switcher">
+            <el-dropdown trigger="hover" placement="bottom-end">
+              <div class="language-button">
+                <span class="language-icon">🌐</span>
+                <span class="language-text">{{ $t('language.switch') }}</span>
+                <el-icon class="dropdown-arrow"><ArrowDown /></el-icon>
+              </div>
+              <template #dropdown>
+                <el-dropdown-menu class="language-dropdown">
+                  <el-dropdown-item 
+                    v-for="locale in availableLocales" 
+                    :key="locale.code"
+                    @click="switchToLocale(locale.code)"
+                    :class="{ 'is-active': currentLocale === locale.code }"
+                  >
+                    <div class="locale-item">
+                      <span class="locale-name">{{ locale.name }}</span>
+                      <el-icon v-if="currentLocale === locale.code" class="check-icon">
+                        <Check />
+                      </el-icon>
+                    </div>
                   </el-dropdown-item>
                 </el-dropdown-menu>
               </template>
@@ -119,7 +146,7 @@
 </template>
 
 <script setup lang="ts">
-import { Link, ArrowDown, Monitor, Document } from '@element-plus/icons-vue'
+import { Link, ArrowDown, Monitor, Document, Check } from '@element-plus/icons-vue'
 import type { ConnectionConfig } from '../composables/useApi'
 
 // 设置页面元信息
@@ -140,6 +167,26 @@ const props = withDefaults(defineProps<Props>(), {
   currentDatabase: '',
   connectionId: ''
 })
+
+// 国际化支持
+const { locale, locales, setLocale, t: $t } = useI18n()
+const $localePath = useLocalePath()
+
+// 可用语言列表
+const availableLocales = computed(() => {
+  return locales.value.map(l => ({
+    code: l.code,
+    name: l.name
+  }))
+})
+
+// 当前语言
+const currentLocale = computed(() => locale.value)
+
+// 切换语言
+const switchToLocale = async (localeCode: string) => {
+  await setLocale(localeCode as 'en' | 'zh')
+}
 
 </script>
 
@@ -377,6 +424,80 @@ const props = withDefaults(defineProps<Props>(), {
   }
 }
 
+/* Language Switcher Styles */
+.language-switcher {
+  margin-right: var(--sc-space-md);
+}
+
+.language-button {
+  display: flex;
+  align-items: center;
+  gap: var(--sc-space-xs);
+  padding: var(--sc-space-sm) var(--sc-space-md);
+  background: var(--sc-bg-primary);
+  border: 1px solid var(--sc-border);
+  border-radius: var(--sc-radius-sm);
+  cursor: pointer;
+  transition: all var(--sc-transition-fast);
+  color: var(--sc-text-secondary);
+  font-size: 14px;
+  font-weight: 500;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
+}
+
+.language-button:hover {
+  background: var(--sc-bg-secondary);
+  border-color: var(--sc-primary-start);
+  color: var(--sc-primary-start);
+  transform: translateY(-1px);
+  box-shadow: 0 4px 8px rgba(217, 119, 6, 0.1);
+}
+
+.language-icon {
+  font-size: 16px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.language-text {
+  font-weight: 500;
+}
+
+.language-dropdown .el-dropdown-item {
+  padding: 0;
+}
+
+.locale-item {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: var(--sc-space-sm) var(--sc-space-md);
+  width: 100%;
+  transition: all var(--sc-transition-fast);
+}
+
+.locale-item:hover {
+  /* background: var(--sc-bg-secondary); */
+  color: var(--sc-primary-start);
+}
+
+.locale-name {
+  font-weight: 500;
+  font-size: 14px;
+}
+
+.check-icon {
+  padding-left: 10px;
+  font-size: 16px;
+  color: var(--sc-primary-start);
+}
+
+.el-dropdown-item.is-active .locale-item {
+  background: var(--sc-bg-secondary);
+  color: var(--sc-primary-start);
+}
+
 /* GitHub Links Styles */
 .github-links {
   margin-left: var(--sc-space-md);
@@ -477,8 +598,22 @@ const props = withDefaults(defineProps<Props>(), {
   color: var(--sc-primary-start);
 }
 
-/* GitHub 链接响应式优化 */
+/* 语言切换器和 GitHub 链接响应式优化 */
 @media (max-width: 768px) {
+  .language-switcher {
+    margin-right: var(--sc-space-sm);
+  }
+  
+  .language-text {
+    display: none;
+  }
+  
+  .language-button {
+    padding: var(--sc-space-sm);
+    min-width: 40px;
+    justify-content: center;
+  }
+  
   .github-links {
     margin-left: var(--sc-space-sm);
   }
@@ -495,6 +630,10 @@ const props = withDefaults(defineProps<Props>(), {
 }
 
 @media (max-width: 600px) {
+  .language-switcher {
+    margin-right: var(--sc-space-xs);
+  }
+  
   .github-links {
     display: none;
   }

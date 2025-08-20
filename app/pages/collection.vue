@@ -1,17 +1,17 @@
 <template>
   <NuxtLayout 
     name="default" 
-    page-title="集合管理"
+    :page-title="$t('collection.title')"
     :current-connection="currentConnection"
     :current-database="currentDatabase"
   >
     <template #page-actions>
       <el-button type="default" @click="goBack" style="margin-right: 16px;">
         <el-icon><ArrowLeft /></el-icon>
-        返回数据库列表
+        {{ $t('collection.backToDatabases') }}
       </el-button>
       <div v-if="currentDatabase" style="margin-right: 16px; color: #606266;">
-        数据库: {{ currentDatabase }}
+        {{ $t('collection.database') }}: {{ currentDatabase }}
       </div>
       <el-button 
         type="success" 
@@ -19,7 +19,7 @@
         :disabled="loading"
         style="margin-right: 10px"
       >
-        创建集合
+        {{ $t('collection.createCollection') }}
       </el-button>
       <el-button 
         type="primary" 
@@ -27,7 +27,7 @@
         :loading="loading"
         :icon="Refresh"
       >
-        刷新
+        {{ $t('collection.refresh') }}
       </el-button>
     </template>
 
@@ -35,7 +35,7 @@
       <!-- 集合列表 -->
       <el-card class="collections-card" shadow="hover">
         <template #header>
-          <span>集合列表</span>
+          <span>{{ $t('collection.list') }}</span>
         </template>
         
         <!-- 加载状态 -->
@@ -167,6 +167,9 @@
 <script setup lang="ts">
 import { ArrowLeft, Refresh } from '@element-plus/icons-vue'
 import type { CollectionInfo, EmbeddingModel, SearchResultItem, DistanceMetric, HnswConfig } from '~/types/scintirete.d.ts'
+
+// 国际化
+const { t: $t } = useI18n()
 
 // 获取路由参数
 const route = useRoute()
